@@ -1,5 +1,5 @@
 import { PublicKey } from '@solana/web3.js'
-import { useGetBalance } from '@/components/profile/use-get-balance'
+import { useGetBalance } from '@/components/wallet/use-get-balance'
 import { ActivityIndicator, View } from 'react-native'
 import { AppText } from '@/components/app-text'
 import { lamportsToSol } from '@/utils/lamports-to-sol'

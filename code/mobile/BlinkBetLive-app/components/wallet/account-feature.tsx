@@ -4,13 +4,13 @@ import { ellipsify } from '@/utils/ellipsify'
 import { AppView } from '@/components/app-view'
 import { AppPage } from '@/components/app-page'
 import { AccountUiButtons } from './account-ui-buttons'
-import { AccountUiBalance } from '@/components/profile/account-ui-balance'
-import { AccountUiTokenAccounts } from '@/components/profile/account-ui-token-accounts'
-import { Pressable, RefreshControl, ScrollView } from 'react-native'
+import { AccountUiBalance } from '@/components/wallet/account-ui-balance'
+import { AccountUiTokenAccounts } from '@/components/wallet/account-ui-token-accounts'
+import { Pressable, RefreshControl, ScrollView, StyleSheet, View, Text } from 'react-native'
 import { useCallback, useState } from 'react'
-import { useGetBalanceInvalidate } from '@/components/profile/use-get-balance'
+import { useGetBalanceInvalidate } from '@/components/wallet/use-get-balance'
 import { PublicKey } from '@solana/web3.js'
-import { useGetTokenAccountsInvalidate } from '@/components/profile/use-get-token-accounts'
+import { useGetTokenAccountsInvalidate } from '@/components/wallet/use-get-token-accounts'
 import { WalletUiButtonConnect } from '@/components/solana/wallet-ui-button-connect'
 import { router } from 'expo-router'
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
@@ -29,7 +29,7 @@ export function AccountFeature() {
   return (
     <AppPage>
       <AppView className="flex-row justify-between items-center px-4 py-2">
-        <AppText className="text-2xl font-bold">Profile</AppText>
+        <AppText className="text-2xl font-bold">Wallet</AppText>
         <Pressable onPress={() => router.push('/settings')}>
           <UiIconSymbol name="gearshape.fill" size={24} color="#000" />
         </Pressable>

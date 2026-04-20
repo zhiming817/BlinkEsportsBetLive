@@ -5,7 +5,7 @@ import { useMobileWallet } from '@wallet-ui/react-native-web3js'
 import { Button } from '@react-navigation/elements'
 import React from 'react'
 import { ActivityIndicator } from 'react-native'
-import { useRequestAirdrop } from '@/components/profile/use-request-airdrop'
+import { useRequestAirdrop } from '@/components/wallet/use-request-airdrop'
 
 export function AccountFeatureAirdrop({ back }: { back: () => void }) {
   const { account } = useMobileWallet()

@@ -1,0 +1,41 @@
+{
+  "categories": ["All", "Esports", "Sports", "Politics"],
+  "markets": [
+    {
+      "id": "m1",
+      "category": "Esports",
+      "match": "T1 vs. Gen.G",
+      "league": "LCK Summer 2024",
+      "time": "Today, 18:00",
+      "odds": {
+        "home": "1.85",
+        "away": "2.10"
+      },
+      "image": "https://api.dicebear.com/7.x/initials/svg?seed=T1"
+    },
+    {
+      "id": "m2",
+      "category": "Esports",
+      "match": "FaZe vs. G2",
+      "league": "PGL Major",
+      "time": "Tomorrow, 20:00",
+      "odds": {
+        "home": "1.50",
+        "away": "2.80"
+      },
+      "image": "https://api.dicebear.com/7.x/initials/svg?seed=FaZe"
+    },
+    {
+      "id": "m3",
+      "category": "Sports",
+      "match": "Lakers vs. Warriors",
+      "league": "NBA Regular Season",
+      "time": "Oct 25, 10:00",
+      "odds": {
+        "home": "1.90",
+        "away": "1.90"
+      },
+      "image": "https://api.dicebear.com/7.x/initials/svg?seed=NBA"
+    }
+  ]
+}

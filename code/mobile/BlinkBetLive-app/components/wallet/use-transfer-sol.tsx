@@ -1,4 +1,4 @@
-import { createTransaction } from '@/components/profile/create-transaction'
+import { createTransaction } from '@/components/wallet/create-transaction'
 import { PublicKey, TransactionSignature } from '@solana/web3.js'
 import { useMutation } from '@tanstack/react-query'
 import { useMobileWallet } from '@wallet-ui/react-native-web3js'

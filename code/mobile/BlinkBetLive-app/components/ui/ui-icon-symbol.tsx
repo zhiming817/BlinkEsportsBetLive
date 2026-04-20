@@ -23,6 +23,9 @@ const MAPPING = {
   'person.circle': 'account-circle',
   'checkmark.circle.fill': 'check-circle',
   'xmark.circle.fill': 'cancel',
+  'skull': 'sentiment-very-dissatisfied',
+  'castle': 'fort',
+  'dragon': 'brightness-high',
 } as UiIconMapping
 
 /**

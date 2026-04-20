@@ -1,0 +1,44 @@
+{
+  "live": {
+    "game": "League of Legends",
+    "team1": {
+      "name": "T1",
+      "logo": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f8/T1_logo.svg/1200px-T1_logo.svg.png"
+    },
+    "team2": {
+      "name": "Gen.G",
+      "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5e/Gen.G_logo.svg/1200px-Gen.G_logo.svg.png"
+    },
+    "time": "22:45",
+    "status": "LIVE"
+  },
+  "microPredictions": [
+    {
+      "id": "1",
+      "title": "First Blood",
+      "icon": "skull",
+      "odds": {
+        "team1": "1.75",
+        "team2": "2.10"
+      }
+    },
+    {
+      "id": "2",
+      "title": "Next Turret",
+      "icon": "castle",
+      "odds": {
+        "team1": "1.60",
+        "team2": "2.30"
+      }
+    },
+    {
+      "id": "3",
+      "title": "First Drake",
+      "icon": "dragon",
+      "odds": {
+        "team1": "1.85",
+        "team2": "1.95"
+      }
+    }
+  ]
+}

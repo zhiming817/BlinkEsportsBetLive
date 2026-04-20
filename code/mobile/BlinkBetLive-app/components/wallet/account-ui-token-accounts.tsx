@@ -3,8 +3,8 @@ import { AppText } from '@/components/app-text'
 import { ActivityIndicator, View } from 'react-native'
 import { AppView } from '@/components/app-view'
 import { ellipsify } from '@/utils/ellipsify'
-import { AccountUiTokenBalance } from '@/components/profile/account-ui-token-balance'
-import { useGetTokenAccounts } from '@/components/profile/use-get-token-accounts'
+import { AccountUiTokenBalance } from '@/components/wallet/account-ui-token-balance'
+import { useGetTokenAccounts } from '@/components/wallet/use-get-token-accounts'
 
 export function AccountUiTokenAccounts({ address }: { address: PublicKey }) {
   let query = useGetTokenAccounts({ address })
