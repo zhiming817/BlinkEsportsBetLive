@@ -16,6 +16,13 @@ const MAPPING = {
   'gearshape.fill': 'settings',
   'wallet.pass.fill': 'wallet',
   'ladybug.fill': 'bug-report',
+  'house.fill': 'home',
+  'chart.bar.fill': 'bar-chart',
+  'list.bullet.rectangle.fill': 'history',
+  'person.fill': 'person',
+  'person.circle': 'account-circle',
+  'checkmark.circle.fill': 'check-circle',
+  'xmark.circle.fill': 'cancel',
 } as UiIconMapping
 
 /**

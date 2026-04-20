@@ -1,0 +1,39 @@
+{
+  "active": [
+    {
+      "id": "3",
+      "status": "ACTIVE",
+      "match": "Team Liquid vs. Cloud9",
+      "league": "LCS Summer",
+      "prediction": "Cloud9 to win",
+      "wager": "3.0 SOL",
+      "potentialWin": "5.4 SOL",
+      "progress": 0.65,
+      "matchTime": "Q3 15:20"
+    }
+  ],
+  "history": [
+    {
+      "id": "1",
+      "status": "SETTLED",
+      "result": "WON",
+      "match": "T1 vs. Gen.G",
+      "league": "LCK Summer Split 2024",
+      "prediction": "T1 to win",
+      "wager": "2.5 SOL",
+      "profit": "+2.1 SOL",
+      "settledTime": "Jul 25, 10:30 PM"
+    },
+    {
+      "id": "2",
+      "status": "SETTLED",
+      "result": "LOST",
+      "match": "FaZe Clan vs. G2 Esports",
+      "league": "CS:GO Major",
+      "prediction": "G2 Esports to win",
+      "wager": "1.8 SOL",
+      "loss": "-1.8 SOL",
+      "settledTime": "Jul 24, 4:15 PM"
+    }
+  ]
+}
