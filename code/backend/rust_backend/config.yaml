@@ -9,9 +9,9 @@ solana:
   networks:
     # 开发网配置
     devnet:
-      rpc_url: "https://api.zan.top/node/v1/solana/devnet/55c625d41c924f97971cdd05bb533048"
+      rpc_url: "https://api.zan.top/node/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79"
       # WebSocket URL (可选，如果不设置会自动从 rpc_url 转换)
-      # wss_url: "wss://api.zan.top/node/ws/v1/solana/devnet/55c625d41c924f97971cdd05bb533048"
+      wss_url: "wss://api.zan.top/node/ws/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79"
     
     # 主网配置
     mainnet:

@@ -13,6 +13,9 @@ pub struct Model {
     pub start_at: DateTimeUtc,
     pub status: String,
     pub winner_id: Option<u32>,
+    pub solana_match_id: Option<String>,
+    pub solana_match_pda: Option<String>,
+    pub solana_tx_signature: Option<String>,
     pub updated_at: DateTimeUtc,
 }
 
