@@ -8,6 +8,7 @@ use std::sync::Arc;
 use config::AppConfig;
 use controllers::create_router;
 use services::database_service::DatabaseService;
+use services::match_service::MatchService;
 use services::event_listener::EventListener;
 use axum::serve;
 use tokio::net::TcpListener;
@@ -39,13 +40,22 @@ async fn main() {
     
     let db_service = Arc::new(db_service);
 
+    // 初始化 MatchService
+    let match_service = Arc::new(MatchService::new(db_service.clone()));
+
     // 启动 Solana 事件监听器
-    let listener_db = Arc::clone(&db_service);
+    let listener_match_service = Arc::clone(&match_service);
     tokio::spawn(async move {
+        // TODO: 应该从配置读取 RPC/WS URL
+        //https://api.zan.top/node/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79
+        let rpc_url = "https://api.zan.top/node/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79";
+        let ws_url = "wss://api.zan.top/node/ws/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79";
+        
         let listener = EventListener::new(
             "AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv",
-            "wss://api.zan.top/node/ws/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79",
-            listener_db
+            ws_url,
+            rpc_url,
+            listener_match_service
         );
         println!("📡 监听合约事件: AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv");
         if let Err(e) = listener.start_listening().await {
