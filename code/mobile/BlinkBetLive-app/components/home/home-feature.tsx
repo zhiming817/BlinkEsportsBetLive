@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import {
   ScrollView,
   StyleSheet,
@@ -7,17 +7,51 @@ import {
   Image,
   TouchableOpacity,
   Dimensions,
+  ActivityIndicator,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
-import homeData from '@/assets/data/home.json'
-
 import { useRouter } from 'expo-router'
+import { fetchApi } from '@/utils/api'
 
 const { width } = Dimensions.get('window')
 
+interface Team {
+  id: number;
+  name: string;
+  acronym: string;
+  image_url: string;
+}
+
+interface Match {
+  id: number;
+  team_a: Team;
+  team_b: Team;
+  start_at: string;
+  status: string;
+  number_of_games: number;
+}
+
 export function HomeFeature() {
   const router = useRouter()
+  const [matches, setMatches] = useState<Match[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    fetchApi<{ success: boolean; data: Match[] }>('/api/matches/featured')
+      .then(json => {
+        console.log('Fetched data:', json);
+        if (json.success) {
+          setMatches(json.data)
+        }
+      })
+      .catch(err => {
+        console.error('Fetch error details:', err.message);
+      })
+      .finally(() => setLoading(false))
+  }, [])
+
+  const featuredMatch = matches.length > 0 ? matches[0] : null
 
   return (
     <View style={styles.container}>
@@ -37,99 +71,71 @@ export function HomeFeature() {
         </View>
 
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          {/* Live Game Card */}
-          <TouchableOpacity 
-            style={styles.liveCard}
-            onPress={() => router.push('/prediction-detail')}
-          >
-            <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>LIVE</Text>
-            </View>
-            <View style={styles.teamsContainer}>
-              <View style={styles.teamInfo}>
-                <Image source={{ uri: homeData.live.team1.logo }} style={styles.teamLogo} />
-                <Text style={styles.teamName}>{homeData.live.team1.name}</Text>
+          {loading ? (
+            <ActivityIndicator size="large" color="#00F5FF" style={{ marginTop: 40 }} />
+          ) : featuredMatch ? (
+            /* Featured Upcoming Match Card */
+            <TouchableOpacity 
+              style={styles.featuredCard}
+              onPress={() => router.push('/prediction-detail')}
+            >
+              <View style={[styles.upcomingIndicator, featuredMatch.status === 'running' && styles.liveIndicator]}>
+                <Text style={[styles.upcomingText, featuredMatch.status === 'running' && styles.liveText]}>
+                  {featuredMatch.status.toUpperCase()}
+                </Text>
               </View>
-              <Text style={styles.vsText}>VS</Text>
-              <View style={styles.teamInfo}>
-                <Image source={{ uri: homeData.live.team2.logo }} style={styles.teamLogo} />
-                <Text style={styles.teamName}>{homeData.live.team2.name}</Text>
-              </View>
-            </View>
-            <View style={styles.bottomBar}>
-              <View style={[styles.miniTeamLogo, { backgroundColor: '#EB0029' }]} />
-              <Text style={styles.gameTime}>{homeData.live.time}</Text>
-              <View style={[styles.miniTeamLogo, { backgroundColor: '#D9B44A' }]} />
-            </View>
-          </TouchableOpacity>
-
-          {/* Live Odds Section */}
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>LIVE ODDS</Text>
-            <View style={styles.legendContainer}>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#00F5FF' }]} />
-                <Text style={styles.legendText}>T1</Text>
-              </View>
-              <View style={styles.legendItem}>
-                <View style={[styles.legendDot, { backgroundColor: '#A020F0' }]} />
-                <Text style={styles.legendText}>Gen.G</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Dummy Graph Placeholder */}
-          <View style={styles.graphContainer}>
-            <View style={styles.graphPlaceholder}>
-              {/* This would be a real chart in a production app */}
-              <View style={styles.graphLineContainer}>
-                {/* Simulated Wave Lines */}
-                <View style={[styles.graphLine, { borderColor: '#A020F0', top: 40 }]} />
-                <View style={[styles.graphLine, { borderColor: '#00F5FF', top: 20 }]} />
-              </View>
-              <View style={[styles.graphMarker, { left: '70%', top: 20 }]}>
-                <View style={styles.markerLine} />
-                <View style={[styles.markerLabel, { bottom: 30 }]}>
-                  <Text style={styles.markerText}>T1</Text>
+              <View style={styles.teamsContainer}>
+                <View style={styles.teamInfo}>
+                  <Image source={{ uri: featuredMatch.team_a.image_url }} style={styles.teamLogo} />
+                  <Text style={styles.teamName}>{featuredMatch.team_a.name}</Text>
                 </View>
-                <View style={[styles.markerLabel, { top: 30 }]}>
-                  <Text style={styles.markerText}>Gen.G</Text>
+                <Text style={styles.vsText}>VS</Text>
+                <View style={styles.teamInfo}>
+                  <Image source={{ uri: featuredMatch.team_b.image_url }} style={styles.teamLogo} />
+                  <Text style={styles.teamName}>{featuredMatch.team_b.name}</Text>
                 </View>
               </View>
-            </View>
-          </View>
+              <View style={styles.bottomBar}>
+                <UiIconSymbol name="clock.fill" size={14} color="#8E8E93" />
+                <Text style={styles.gameTime}>
+                  {featuredMatch.start_at.split(' ')[1].substring(0, 5)} (UTC)
+                </Text>
+              </View>
+            </TouchableOpacity>
+          ) : null}
 
-          {/* Micro Predictions Section */}
+          {/* Market Section */}
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>MICRO-PREDICTIONS</Text>
-            <TouchableOpacity onPress={() => router.push('/(tabs)/my-bets')}>
-              <Text style={styles.showAllText}>Show All {'>'}</Text>
+            <Text style={styles.sectionTitle}>FEATURED MARKETS</Text>
+            <TouchableOpacity onPress={() => router.push('/(tabs)/market')}>
+              <Text style={styles.showAllText}>More Markets {'>'}</Text>
             </TouchableOpacity>
           </View>
 
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.microScroll}>
-            {homeData.microPredictions.map((item) => (
+          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.matchScroll}>
+            {matches.map((item) => (
               <TouchableOpacity 
                 key={item.id} 
-                style={styles.microCard}
+                style={styles.matchCard}
                 onPress={() => router.push('/prediction-detail')}
               >
-                <View style={styles.microIconContainer}>
-                  <UiIconSymbol name={item.icon as any} size={32} color="#00F5FF" />
+                <View style={styles.matchIconContainer}>
+                  <UiIconSymbol name="trophy.fill" size={32} color="#00F5FF" />
                 </View>
-                <Text style={styles.microTitle}>{item.title}</Text>
-                <View style={styles.microOddsRow}>
-                  <Text style={styles.microOddLabel}>T1: <Text style={styles.microOddValue}>{item.odds.team1}</Text></Text>
-                  <Text style={styles.microOddLabel}>Gen.G: <Text style={styles.microOddValue}>{item.odds.team2}</Text></Text>
+                <Text style={styles.matchTitle}>{item.team_a.acronym} vs {item.team_b.acronym}</Text>
+                <Text style={styles.matchSubtitle}>BO{item.number_of_games}</Text>
+                <View style={styles.oddsRow}>
+                  <View style={styles.oddItem}>
+                    <Text style={styles.oddLabel}>{item.team_a.name}</Text>
+                    <Text style={styles.oddValue}>1.85</Text>
+                  </View>
+                  <View style={styles.oddItem}>
+                    <Text style={styles.oddLabel}>{item.team_b.name}</Text>
+                    <Text style={styles.oddValue}>2.10</Text>
+                  </View>
                 </View>
-                <View style={styles.microButtonsRow}>
-                  <View style={styles.microButton}>
-                    <Text style={styles.microButtonText}>BET T1</Text>
-                  </View>
-                  <View style={styles.microButton}>
-                    <Text style={styles.microButtonText}>BET Gen.G</Text>
-                  </View>
+                <View style={styles.betButton}>
+                  <Text style={styles.betButtonText}>PLACE PREDICTION</Text>
                 </View>
               </TouchableOpacity>
             ))}
@@ -195,7 +201,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 24,
   },
-  liveCard: {
+  featuredCard: {
     backgroundColor: '#1A1B2E',
     borderRadius: 20,
     padding: 16,
@@ -205,26 +211,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     overflow: 'hidden',
   },
-  liveIndicator: {
+  upcomingIndicator: {
     position: 'absolute',
     top: 12,
     left: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#EB0029',
+    backgroundColor: 'rgba(0, 245, 255, 0.1)',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#00F5FF',
   },
-  liveDot: {
-    width: 6,
-    height: 6,
-    borderRadius: 3,
-    backgroundColor: 'white',
-    marginRight: 4,
-  },
-  liveText: {
-    color: 'white',
+  upcomingText: {
+    color: '#00F5FF',
     fontSize: 10,
     fontWeight: 'bold',
   },
@@ -264,15 +263,17 @@ const styles = StyleSheet.create({
     borderTopColor: 'rgba(255,255,255,0.05)',
   },
   gameTime: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginHorizontal: 20,
+    color: '#8E8E93',
+    fontSize: 14,
+    fontWeight: '500',
+    marginLeft: 6,
   },
-  miniTeamLogo: {
-    width: 24,
-    height: 24,
-    borderRadius: 4,
+  liveIndicator: {
+    backgroundColor: 'rgba(255, 45, 85, 0.1)',
+    borderColor: '#FF2D55',
+  },
+  liveText: {
+    color: '#FF2D55',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -287,140 +288,71 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     letterSpacing: 1,
   },
-  legendContainer: {
-    flexDirection: 'row',
-  },
-  legendItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginLeft: 12,
-  },
-  legendDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    marginRight: 4,
-  },
-  legendText: {
-    color: '#8E8E93',
-    fontSize: 12,
-  },
-  graphContainer: {
-    height: 150,
-    width: '100%',
-    backgroundColor: 'rgba(26, 27, 46, 0.5)',
-    borderRadius: 16,
-    overflow: 'hidden',
-  },
-  graphPlaceholder: {
-    flex: 1,
-    padding: 16,
-  },
-  graphLineContainer: {
-    flex: 1,
-    justifyContent: 'center',
-  },
-  graphLine: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    height: 40,
-    borderTopWidth: 2,
-    borderStyle: 'solid',
-    opacity: 0.8,
-  },
-  graphMarker: {
-    position: 'absolute',
-    width: 2,
-    height: '100%',
-    backgroundColor: 'white',
-    opacity: 0.3,
-    alignItems: 'center',
-  },
-  markerLine: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'white',
-    position: 'absolute',
-    top: '50%',
-    marginTop: -4,
-  },
-  markerLabel: {
-    position: 'absolute',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  markerText: {
-    color: 'white',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
   showAllText: {
     color: '#00F5FF',
     fontSize: 14,
   },
-  microScroll: {
+  matchScroll: {
     flexDirection: 'row',
   },
-  microCard: {
-    width: width * 0.4,
+  matchCard: {
+    width: width * 0.6,
     backgroundColor: 'rgba(26, 27, 46, 0.8)',
     borderRadius: 16,
-    padding: 12,
+    padding: 16,
     marginRight: 12,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
   },
-  microIconContainer: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  matchIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
     backgroundColor: 'rgba(0, 245, 255, 0.05)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 12,
     borderWidth: 1,
     borderColor: 'rgba(0, 245, 255, 0.2)',
   },
-  microTitle: {
+  matchTitle: {
     color: 'white',
-    fontSize: 14,
+    fontSize: 16,
     fontWeight: 'bold',
-    marginBottom: 8,
+    marginBottom: 4,
   },
-  microOddsRow: {
+  matchSubtitle: {
+    color: '#8E8E93',
+    fontSize: 12,
+    marginBottom: 16,
+  },
+  oddsRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    width: '100%',
-    marginBottom: 12,
+    marginBottom: 16,
   },
-  microOddLabel: {
+  oddItem: {
+    flex: 1,
+  },
+  oddLabel: {
     color: '#8E8E93',
     fontSize: 10,
+    marginBottom: 2,
   },
-  microOddValue: {
+  oddValue: {
     color: '#00F5FF',
+    fontSize: 16,
     fontWeight: 'bold',
   },
-  microButtonsRow: {
-    width: '100%',
-  },
-  microButton: {
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
+  betButton: {
+    backgroundColor: '#00F5FF',
     borderRadius: 8,
-    paddingVertical: 6,
+    paddingVertical: 10,
     alignItems: 'center',
-    marginBottom: 6,
   },
-  microButtonText: {
-    color: 'white',
-    fontSize: 10,
+  betButtonText: {
+    color: '#0B0C1E',
+    fontSize: 12,
     fontWeight: 'bold',
   },
 });
