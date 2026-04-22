@@ -23,7 +23,7 @@ async function main() {
 
     const program = anchor.workspace.BlinkBetContract as Program<BlinkBetContract>;
 
-    const matchId = "match_1776848001"; 
+    const matchId = "match_1776867348"; 
     const result = 1; // 宣告 1 (主队) 获胜
 
     const [matchPda] = anchor.web3.PublicKey.findProgramAddressSync(

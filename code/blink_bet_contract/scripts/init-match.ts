@@ -4,17 +4,16 @@ import { BlinkBetContract } from "../target/types/blink_bet_contract";
 import fs from "fs";
 
 /**
- * 这是一个独立的初始化脚本，可以直接通过 ts-node 运行
- * 命令: npx ts-node scripts/init-devnet.ts
+ * 这是一个独立的创建比赛脚本
+ * 命令: npx ts-node scripts/init-match.ts [matchId] [startTimeOffsetInSeconds]
+ * 示例: npx ts-node scripts/init-match.ts match_test_001 86400
  */
 
 async function main() {
     // 1. 设置 Provider
-    // 强制使用你的专用 RPC 节点
     const RPC_URL = "https://solana-devnet.nodit.io/g_geDW2RLecIkMAlMGV6TL6veVho5cNS";
     const connection = new anchor.web3.Connection(RPC_URL, "confirmed");
     
-    // 使用本地 solana 配置的钱包
     const walletPath = `${process.env.HOME}/.config/solana/id.json`;
     const secretKey = Uint8Array.from(JSON.parse(fs.readFileSync(walletPath, "utf-8")));
     const keypair = anchor.web3.Keypair.fromSecretKey(secretKey);
@@ -26,8 +25,17 @@ async function main() {
     anchor.setProvider(provider);
 
     const program = anchor.workspace.BlinkBetContract as Program<BlinkBetContract>;
+    
+    // 从命令行参数获取 matchId 和 startTime
+    const args = process.argv.slice(2);
+    let matchId = args[0] || `match_${Math.floor(Date.now() / 1000)}`;
+    matchId = "1420913";
+    const offset = parseInt(args[1] || "86400"); // 默认 1 天后
+    const startTime = new anchor.BN(Math.floor(Date.now() / 1000) + offset);
+
     console.log("Program ID:", program.programId.toBase58());
-    console.log("Admin Wallet:", wallet.publicKey.toBase58());
+    console.log("Match ID:", matchId);
+    console.log("Start Time (Unix):", startTime.toString());
 
     // PDA 种子
     const [configPda] = anchor.web3.PublicKey.findProgramAddressSync(
@@ -35,37 +43,12 @@ async function main() {
         program.programId
     );
 
-    // --- 步骤 1: 初始化 Config ---
-    console.log("\n--- Step 1: Initialize Config ---");
-    try {
-        const tx = await program.methods
-            .initializeConfig(500) // 5% fee
-            .accounts({
-                config: configPda,
-                admin: wallet.publicKey,
-                systemProgram: anchor.web3.SystemProgram.programId,
-            } as any)
-            .rpc();
-        console.log("Success! Config TX:", tx);
-    } catch (err) {
-        if (err.logs && err.logs.some(log => log.includes("already in use"))) {
-            console.log("Notice: Config already initialized.");
-        } else {
-            console.error("Error initializing config:", err);
-        }
-    }
-
-    // --- 步骤 2: 创建测试比赛 ---
-    // 注意：此逻辑已抽取至 scripts/init-match.ts，此处保留作为默认初始化演示
-    console.log("\n--- Step 2: Initialize Test Match ---");
-    const matchId = `match_${Math.floor(Date.now() / 1000)}`;
-    const startTime = new anchor.BN(Math.floor(Date.now() / 1000) + 86400); // 1天后
-
     const [matchPda] = anchor.web3.PublicKey.findProgramAddressSync(
         [Buffer.from("match"), Buffer.from(matchId)],
         program.programId
     );
 
+    console.log("\n--- Creating Match ---");
     try {
         const tx = await program.methods
             .initializeMatch(matchId, startTime)
@@ -76,11 +59,12 @@ async function main() {
                 systemProgram: anchor.web3.SystemProgram.programId,
             } as any)
             .rpc();
-        console.log(`Success! Match [${matchId}] Created.`);
-        console.log("Match TX:", tx);
+        
+        console.log(`✅ Success! Match [${matchId}] Created.`);
+        console.log("Transaction Signature:", tx);
         console.log("Match PDA Address:", matchPda.toBase58());
     } catch (err) {
-        console.error("Error initializing match:", err);
+        console.error("❌ Error initializing match:", err);
     }
 }
 
