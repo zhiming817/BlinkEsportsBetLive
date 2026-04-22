@@ -1,0 +1,73 @@
+# Solana Vault 事件监听器配置文件
+
+# Solana RPC 配置
+solana:
+  # 当前激活的网络: mainnet | devnet | testnet
+  active_network: devnet
+  
+  # 多个网络的 RPC 端点配置
+  networks:
+    # 开发网配置
+    devnet:
+      rpc_url: "https://api.zan.top/node/v1/solana/devnet/55c625d41c924f97971cdd05bb533048"
+      # WebSocket URL (可选，如果不设置会自动从 rpc_url 转换)
+      # wss_url: "wss://api.zan.top/node/ws/v1/solana/devnet/55c625d41c924f97971cdd05bb533048"
+    
+    # 主网配置
+    mainnet:
+      rpc_url: "https://api.zan.top/node/v1/solana/mainnet/55c625d41c924f97971cdd05bb533048"
+      # wss_url: "wss://api.zan.top/node/ws/v1/solana/mainnet/YOUR_MAINNET_API_KEY"
+    
+    # 测试网配置
+    testnet:
+      rpc_url: "https://api.testnet.solana.com"
+      # wss_url: "wss://api.testnet.solana.com"
+
+# Vault 合约配置
+vault:
+  # Vault 合约程序 ID
+  program_id: "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+
+# 监听器配置
+listener:
+  # 监听模式: "polling" (轮询) 或 "websocket" (实时监听)
+  mode: "websocket"
+  
+  # 轮询间隔（秒）- 仅在 polling 模式下生效
+  poll_interval_secs: 5
+  
+  # 事件解析配置: "create" (仅CreateEvent), "trade" (仅TradeEvent), "both" (两者都解析), "none" (都不解析)
+  event_parse: "create"
+
+# 数据库配置
+database:
+  # 数据库类型: "mysql", "postgres" 或 "sqlite"
+  type: "mysql"
+  
+  # SQLite 数据库文件路径（当 type = "sqlite" 时使用）
+  sqlite_path: "data/events.db"
+  
+  # PostgreSQL 连接字符串（当 type = "postgres" 时使用）
+  # postgres_url: "postgres://username:password@localhost/database_name"
+  
+  # MySQL 配置（当 type = "mysql" 时使用）
+  mysql_host: "127.0.0.1"
+  mysql_port: 3306
+  mysql_user: "root"
+  mysql_password: ""
+  # main:pumpfun_mainnet    dev :pumpfun
+  mysql_database: "blink_bet_dev"
+  
+  # 连接池配置
+  max_connections: 5
+  min_connections: 1
+
+# 日志配置（未来扩展）
+# logging:
+#   level: "info"
+#   file: "logs/rust_backend.log"
+
+# 其他配置（未来扩展）
+# features:
+#   enable_metrics: false
+#   enable_alerts: false

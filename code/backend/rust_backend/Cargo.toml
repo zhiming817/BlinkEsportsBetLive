@@ -1,0 +1,30 @@
+[package]
+name = "rust_backend"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+solana-client = "3.0.6"
+solana-sdk = "3.0.0"
+solana-program = "3.0.0"
+solana-commitment-config = "3.0.0"
+solana-transaction-status = "3.0.6"
+solana-pubsub-client = "3.0.6"
+tokio = { version = "1.2", features = ["full"] }
+anyhow = "1.0"
+borsh = "1.5"
+base64 = "0.22"
+hex = "0.4"
+futures-util = "0.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+serde_yaml = "0.9"
+# 数据库 ORM - 使用 SeaORM
+sea-orm = { version = "1.1", features = ["sqlx-mysql", "sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls", "macros", "debug-print"] }
+chrono = { version = "0.4", features = ["serde"] }
+# HTTP 服务器
+axum = "0.8"
+tower = "0.5"
+tower-http = { version = "0.6", features = ["cors"] }
+# HTTP 客户端
+reqwest = { version = "0.12", features = ["json"] }
