@@ -23,9 +23,9 @@ solana:
       rpc_url: "https://api.testnet.solana.com"
       # wss_url: "wss://api.testnet.solana.com"
 
-# Vault 合约配置
+#  合约配置
 vault:
-  # Vault 合约程序 ID
+  #  合约程序 ID
   program_id: "AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv"
 
 # 监听器配置

@@ -94,9 +94,6 @@ impl EventListener {
         // 调试：打印账号数据长度
         println!("🔍 [调试] 账号数据实际长度: {} bytes", account_data.len());
         
-        // 使用锚点合约数据反序列化时，Anchor 通常会在末尾保留一些空间或有填充
-        // Borsh Deserialize 要求字节数必须完全匹配。如果数据有多余字节，会报 "Not all bytes read"。
-        // 我们改为使用 BorshDeserialize 提供的更底层的接口，或者直接手动切片直到消费完数据。
         let mut data_ptr = &account_data[..];
         let match_pool = MatchPoolAccount::deserialize(&mut data_ptr)
             .map_err(|e| anyhow::anyhow!("反序列化 MatchPool 失败: {}", e))?;
@@ -122,7 +119,6 @@ impl EventListener {
         while let Ok(log) = stream.recv() {
             println!("📥 接收到新日志 (Sig: {})", log.value.signature);
             for line in log.value.logs {
-                // 打印每一行日志以便观察
                 println!("  [LOG] {}", line);
                 if let Some(data_index) = line.find("Program data: ") {
                     let b64_data = &line[data_index + 14..];
@@ -139,7 +135,6 @@ impl EventListener {
                                 
                                 println!("🔥 比赛初始化事件: MatchID={}, StartTime={}, Sig={}", match_id, event.start_time, signature);
                                 
-                                // 使用 MatchService 同步到数据库
                                 if let Err(e) = self.match_service.update_solana_info(
                                     &match_id,
                                     match_id.clone(),
@@ -149,13 +144,10 @@ impl EventListener {
                                     eprintln!("❌ 同步比赛到数据库失败: {}", e);
                                 } else {
                                     println!("✅ 比赛数据库记录已更新 (via MatchService)");
-                                    
-                                    // --- 测试代码: 初始化后立即抓取链上数据校验 ---
                                     if let Ok(pool_on_chain) = self.fetch_match_pool(&match_pda).await {
                                         println!("🧪 [测试] 链上校验成功! MatchID: {}, TotalA: {}", 
                                             pool_on_chain.match_id, pool_on_chain.total_pool_a);
                                     }
-                                    // ------------------------------------------
                                 }
                             }
                         } else if disc == bet_placed_disc {
@@ -174,19 +166,23 @@ impl EventListener {
                                     eprintln!("❌ 更新下注记录失败: {}", e);
                                 }
 
-                                // --- 测试代码: 下注后抓取链上奖池状态 ---
+                                // --- 修复调试用查询代码 ---
                                 let db = self.match_service.get_db();
-                                let numeric_id = event.match_id.replace("match_", "").parse::<u32>().unwrap_or(0);
+                                let numeric_id = if event.match_id.contains("match_") {
+                                    event.match_id.replace("match_", "").parse::<u32>().unwrap_or(0)
+                                } else {
+                                    event.match_id.parse::<u32>().unwrap_or(0)
+                                };
                                 println!("🔍 [调试] 正在查询奖池记录, MatchId: {}", numeric_id);
                                 
                                 match crate::models::match_pool_entity::Entity::find()
                                     .filter(crate::models::match_pool_entity::Column::MatchId.eq(numeric_id))
                                     .one(db).await {
                                     Ok(Some(pool_record)) => {
-                                        println!("🔍 [调试] 找到 PDA: {}, 开始请求 RPC...", pool_record.pda_address);
+                                        println!("🔍 [调试] 找到数据库记录! PDA: {}, 开始请求 RPC...", pool_record.pda_address);
                                         match self.fetch_match_pool(&pool_record.pda_address).await {
                                             Ok(pool_on_chain) => {
-                                                println!("🧪 [下注测试] 链上奖池校验: TotalA={}, TotalB={}", 
+                                                println!("🧪 [下注测试] 链上奖池校验成功: TotalA={}, TotalB={}", 
                                                     pool_on_chain.total_pool_a, pool_on_chain.total_pool_b);
                                             },
                                             Err(e) => eprintln!("❌ [调试] RPC 请求失败: {}", e),
@@ -195,12 +191,10 @@ impl EventListener {
                                     Ok(None) => println!("⚠️ [调试] 数据库中未找到 MatchId 为 {} 的奖池记录", numeric_id),
                                     Err(e) => eprintln!("❌ [调试] 数据库查询出错: {}", e),
                                 }
-                                // ------------------------------------------
                             }
                         } else if disc == match_settled_disc {
                             if let Ok(event) = MatchSettledData::try_from_slice(&content) {
                                 println!("结算事件: MatchID={}, WinnerSide={}", event.match_id, event.winner_side);
-                                
                                 if let Err(e) = self.match_service.settle_match(
                                     &event.match_id,
                                     event.winner_side
@@ -217,21 +211,12 @@ impl EventListener {
                 }
             }
         }
-
         Ok(())
     }
 
     async fn handle_event_data(&self, data: &[u8]) {
-        if data.len() < 8 {
-            return;
-        }
-
+        if data.len() < 8 { return; }
         let discriminator = &data[..8];
-        let _event_data = &data[8..];
-
-        // 这里可以通过比较 discriminator 来确定是哪个事件
-        // 由于 Discriminator 是由 sha256("event:EventName")[..8] 计算的
-        // 后续可以在这里添加具体的 match 分支
         println!("Received event with discriminator: {:?}", discriminator);
     }
 }

@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use sea_orm::*;
 
 use crate::controllers::http_controller::{AppState, ApiResponse};
-use crate::models::{match_entity, team_entity};
+use crate::models::{match_entity, team_entity, match_pool_entity};
 
 /// 首页赛事列表项
 #[derive(Serialize, Deserialize, Clone)]
@@ -30,6 +30,7 @@ pub struct MatchDetail {
     pub solana_match_id: Option<String>,
     pub solana_match_pda: Option<String>,
     pub solana_tx_signature: Option<String>,
+    pub match_pools: Option<match_pool_entity::Model>,
     pub updated_at: String,
 }
 
@@ -101,6 +102,14 @@ pub async fn get_match_detail_handler(
         number_of_games: m.number_of_games,
     };
 
+    // 2.5 获取奖池信息
+    let match_pool = match_pool_entity::Entity::find()
+        .filter(match_pool_entity::Column::MatchId.eq(m.id))
+        .one(db)
+        .await
+        .ok()
+        .flatten();
+
     // 3. 构造详情对象
     let detail = MatchDetail {
         base,
@@ -108,6 +117,7 @@ pub async fn get_match_detail_handler(
         solana_match_id: m.solana_match_id,
         solana_match_pda: m.solana_match_pda,
         solana_tx_signature: m.solana_tx_signature,
+        match_pools: match_pool,
         updated_at: m.updated_at.to_string(),
     };
 
