@@ -20,28 +20,86 @@ import * as anchor from "@coral-xyz/anchor";
 import { useMobileWallet, useAuthorization } from '@wallet-ui/react-native-web3js';
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { Buffer } from 'buffer';
+import { BlinkBetContract } from '@/constants/blink_bet_contract';
 
 // 这里的 Program ID 需要和你的合约一致
 const PROGRAM_ID = new PublicKey("AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv");
 
-// IDL 接口定义（简化版，仅包含 placeBet 方法）
+// IDL 导出处理
+import { BlinkBetContract as IDL_TYPE } from '@/constants/blink_bet_contract';
+// 由于 blink_bet_contract.ts 导出的是类型定义，我们需要完整包含 types 字段以满足 Anchor 的运行时需求
 const IDL: any = {
-  "version": "0.1.0",
-  "name": "blink_bet_contract",
+  "address": "AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv",
+  "metadata": {
+    "name": "blinkBetContract",
+    "version": "0.1.0",
+    "spec": "0.1.0",
+    "description": "Created with Anchor"
+  },
   "instructions": [
     {
-      "name": "placeBet",
+      "name": "claimPrize",
+      "discriminator": [157, 233, 139, 121, 246, 62, 234, 235],
       "accounts": [
-        { "name": "matchPool", "isMut": true, "isSigner": false },
-        { "name": "userBet", "isMut": true, "isSigner": false },
-        { "name": "user", "isMut": true, "isSigner": true },
-        { "name": "systemProgram", "isMut": false, "isSigner": false }
+        { "name": "matchPool", "writable": true },
+        { "name": "userBet", "writable": true },
+        { "name": "config" },
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "feeRecipient", "writable": true }
+      ],
+      "args": [{ "name": "matchId", "type": "string" }]
+    },
+    {
+      "name": "placeBet",
+      "discriminator": [222, 62, 67, 220, 63, 166, 126, 33],
+      "accounts": [
+        { "name": "matchPool", "writable": true },
+        { "name": "userBet", "writable": true },
+        { "name": "user", "writable": true, "signer": true },
+        { "name": "systemProgram", "address": "11111111111111111111111111111111" }
       ],
       "args": [
         { "name": "matchId", "type": "string" },
         { "name": "amount", "type": "u64" },
         { "name": "side", "type": "u8" }
       ]
+    }
+  ],
+  "accounts": [
+    { "name": "matchPool", "discriminator": [210, 146, 169, 198, 229, 155, 122, 150] },
+    { "name": "userBet", "discriminator": [138, 220, 144, 205, 2, 179, 255, 241] }
+  ],
+  "types": [
+    {
+      "name": "matchPool",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "matchId", "type": "string" },
+          { "name": "teamA", "type": "string" },
+          { "name": "teamB", "type": "string" },
+          { "name": "startTime", "type": "i64" },
+          { "name": "totalPoolA", "type": "u64" },
+          { "name": "totalPoolB", "type": "u64" },
+          { "name": "winner", "type": "u8" },
+          { "name": "isSettled", "type": "bool" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
+    },
+    {
+      "name": "userBet",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          { "name": "owner", "type": "pubkey" },
+          { "name": "matchId", "type": "string" },
+          { "name": "amount", "type": "u64" },
+          { "name": "side", "type": "u8" },
+          { "name": "isClaimed", "type": "bool" },
+          { "name": "bump", "type": "u8" }
+        ]
+      }
     }
   ]
 };
@@ -102,7 +160,7 @@ export default function PredictionDetailScreen() {
     if (!matchData) return;
     
     // 1. 检查钱包连接
-    if (!selectedAccount) {
+    if (!account) {
       try {
         await authorize();
       } catch (e) {
@@ -129,20 +187,20 @@ export default function PredictionDetailScreen() {
         [
           Buffer.from("bet"),
           Buffer.from(matchId),
-          new PublicKey(selectedAccount.publicKey).toBuffer()
+          new PublicKey(account.publicKey).toBuffer()
         ],
         PROGRAM_ID
       );
 
       // 构造 Mock Wallet 对接 Anchor 进行交易构造
       const mockWallet = {
-        publicKey: new PublicKey(selectedAccount.publicKey),
+        publicKey: new PublicKey(account.publicKey),
         signTransaction: async (tx: any) => tx,
         signAllTransactions: async (txs: any[]) => txs,
       };
 
       const provider = new anchor.AnchorProvider(connection, mockWallet as any, { commitment: "confirmed" });
-      const program = new anchor.Program(IDL, PROGRAM_ID, provider);
+      const program = new anchor.Program(IDL, provider) as anchor.Program<BlinkBetContract>;
 
       // 3. 构建指令并生成交易
       const instruction = await program.methods
@@ -150,17 +208,19 @@ export default function PredictionDetailScreen() {
         .accounts({
           matchPool: matchPda,
           userBet: userBetPda,
-          user: selectedAccount.publicKey,
+          user: account.publicKey,
           systemProgram: SystemProgram.programId,
         } as any)
         .instruction();
 
       const transaction = new anchor.web3.Transaction().add(instruction);
-      transaction.recentBlockhash = (await connection.getLatestBlockhash()).blockhash;
-      transaction.feePayer = new PublicKey(selectedAccount.publicKey);
+      const latestBlockhash = await connection.getLatestBlockhash();
+      transaction.recentBlockhash = latestBlockhash.blockhash;
+      transaction.feePayer = new PublicKey(account.publicKey);
 
       // 4. 调用 signAndSendTransaction 发起钱包签署
-      const signature = await signAndSendTransaction(transaction);
+      // 使用 minContextSlot 确保交易在当前 blockhash 有效期内
+      const signature = await signAndSendTransaction(transaction, latestBlockhash.lastValidBlockHeight);
 
       Alert.alert("Success", `Bet placed successfully!\nTX: ${signature.substring(0, 20)}...`);
       fetchDetail(true, true); // 刷新数据
