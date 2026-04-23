@@ -11,40 +11,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import { fetchApi } from '@/utils/api';
+import { matchApi, MatchDetail } from '@/utils/api';
 import { styles } from '../styles/prediction-detail.styles';
-
-/**
- * 球队信息接口
- */
-interface Team {
-  id: number;
-  name: string;
-  image_url: string;
-  acronym: string;
-}
-
-/**
- * 比赛详情接口
- */
-interface MatchDetail {
-  id: number;
-  team_a: Team;
-  team_b: Team;
-  start_at: string;
-  status: string;
-  number_of_games: number;
-  solana_match_pda: string | null;
-}
-
-/**
- * API 响应包装
- */
-interface ApiResponse<T> {
-  success: boolean;
-  data: T;
-  message?: string;
-}
 
 export default function PredictionDetailScreen() {
   const router = useRouter();
@@ -61,7 +29,7 @@ export default function PredictionDetailScreen() {
       
       const matchId = Array.isArray(id) ? id[0] : (id || '1420915');
       
-      const response = await fetchApi<ApiResponse<MatchDetail>>(`/api/matches/${matchId}`);
+      const response = await matchApi.getMatchDetail(matchId);
       
       if (isMounted) {
         if (response.success) {
@@ -115,6 +83,12 @@ export default function PredictionDetailScreen() {
       </View>
     );
   }
+
+  // 格式化池数据
+  // 根据实际返回数据，total_pool_a 和 total_pool_b 已经是 SOL 格式的字符串（例如 "0.300000000"）
+  const poolA = matchData.match_pools?.total_pool_a ? parseFloat(matchData.match_pools.total_pool_a).toFixed(2) : '0.00';
+  const poolB = matchData.match_pools?.total_pool_b ? parseFloat(matchData.match_pools.total_pool_b).toFixed(2) : '0.00';
+  const totalPoolVal = (parseFloat(poolA) + parseFloat(poolB)).toFixed(2);
 
   return (
     <View style={styles.container}>
@@ -177,12 +151,12 @@ export default function PredictionDetailScreen() {
             <View style={styles.optionsRow}>
               <TouchableOpacity style={[styles.optionButton, styles.optionActive]}>
                 <Text style={styles.optionTeamName}>{matchData.team_a.name}</Text>
-                <Text style={styles.optionOdds}>Odds: <Text style={styles.oddsValue}>1.85x</Text></Text>
+                <Text style={styles.optionOdds}>Pool: <Text style={styles.oddsValue}>{poolA} SOL</Text></Text>
               </TouchableOpacity>
 
               <TouchableOpacity style={styles.optionButton}>
                 <Text style={styles.optionTeamName}>{matchData.team_b.name}</Text>
-                <Text style={styles.optionOdds}>Odds: <Text style={styles.oddsValue}>2.10x</Text></Text>
+                <Text style={styles.optionOdds}>Pool: <Text style={styles.oddsValue}>{poolB} SOL</Text></Text>
               </TouchableOpacity>
             </View>
 
@@ -197,7 +171,7 @@ export default function PredictionDetailScreen() {
                    <UiIconSymbol name="wallet.pass.fill" size={12} color="white" />
                 </View>
                 <View>
-                  <Text style={styles.poolValue}>--- SOL</Text>
+                  <Text style={styles.poolValue}>{totalPoolVal} SOL</Text>
                   <Text style={styles.poolLabel}>Total Pool</Text>
                 </View>
               </View>
@@ -207,7 +181,7 @@ export default function PredictionDetailScreen() {
                    <UiIconSymbol name="wallet.pass.fill" size={12} color="white" />
                 </View>
                 <View>
-                  <Text style={styles.poolValue}>0 SOL</Text>
+                  <Text style={styles.poolValue}>0.00 SOL</Text>
                   <Text style={styles.poolLabel}>Your Stake</Text>
                 </View>
               </View>
