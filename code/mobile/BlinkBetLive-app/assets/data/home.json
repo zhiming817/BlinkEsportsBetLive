@@ -1,5 +1,5 @@
 {
-  "live": {
+  "featured": {
     "game": "League of Legends",
     "team1": {
       "name": "T1",
@@ -9,14 +9,16 @@
       "name": "Gen.G",
       "logo": "https://upload.wikimedia.org/wikipedia/en/thumb/5/5e/Gen.G_logo.svg/1200px-Gen.G_logo.svg.png"
     },
-    "time": "22:45",
-    "status": "LIVE"
+    "startTime": "2026-04-21T22:45:00Z",
+    "status": "UPCOMING"
   },
-  "microPredictions": [
+  "upcomingMatches": [
     {
       "id": "1",
-      "title": "First Blood",
-      "icon": "skull",
+      "title": "Match Winner",
+      "icon": "trophy",
+      "team1": "T1",
+      "team2": "Gen.G",
       "odds": {
         "team1": "1.75",
         "team2": "2.10"
@@ -24,17 +26,21 @@
     },
     {
       "id": "2",
-      "title": "Next Turret",
-      "icon": "castle",
+      "title": "Match Winner",
+      "icon": "trophy",
+      "team1": "WBG",
+      "team2": "BLG",
       "odds": {
-        "team1": "1.60",
-        "team2": "2.30"
+        "team1": "2.60",
+        "team2": "1.45"
       }
     },
     {
       "id": "3",
-      "title": "First Drake",
-      "icon": "dragon",
+      "title": "Match Winner",
+      "icon": "trophy",
+      "team1": "JDG",
+      "team2": "TES",
       "odds": {
         "team1": "1.85",
         "team2": "1.95"

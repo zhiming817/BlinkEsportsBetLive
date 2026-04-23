@@ -77,7 +77,10 @@ export function HomeFeature() {
             /* Featured Upcoming Match Card */
             <TouchableOpacity 
               style={styles.featuredCard}
-              onPress={() => router.push('/prediction-detail')}
+              onPress={() => router.push({
+                pathname: '/prediction-detail',
+                params: { id: featuredMatch.id }
+              })}
             >
               <View style={[styles.upcomingIndicator, featuredMatch.status === 'running' && styles.liveIndicator]}>
                 <Text style={[styles.upcomingText, featuredMatch.status === 'running' && styles.liveText]}>
@@ -117,7 +120,10 @@ export function HomeFeature() {
               <TouchableOpacity 
                 key={item.id} 
                 style={styles.matchCard}
-                onPress={() => router.push('/prediction-detail')}
+                onPress={() => router.push({
+                  pathname: '/prediction-detail',
+                  params: { id: item.id }
+                })}
               >
                 <View style={styles.matchIconContainer}>
                   <UiIconSymbol name="trophy.fill" size={32} color="#00F5FF" />
