@@ -6,6 +6,7 @@ import {
   Image,
   ScrollView,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol';
@@ -49,12 +50,13 @@ export default function PredictionDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [matchData, setMatchData] = useState<MatchDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchDetail = async (isMounted: boolean) => {
+  const fetchDetail = async (isMounted: boolean, isRefresh = false) => {
     try {
-      if (isMounted) setLoading(true);
+      if (isMounted && !isRefresh) setLoading(true);
       setError(null);
       
       const matchId = Array.isArray(id) ? id[0] : (id || '1420915');
@@ -74,7 +76,10 @@ export default function PredictionDetailScreen() {
         setError(err instanceof Error ? err.message : '网络请求失败');
       }
     } finally {
-      if (isMounted) setLoading(false);
+      if (isMounted) {
+        setLoading(false);
+        setRefreshing(false);
+      }
     }
   };
 
@@ -84,7 +89,12 @@ export default function PredictionDetailScreen() {
     return () => { isMounted = false; };
   }, [id]);
 
-  if (loading) {
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true);
+    fetchDetail(true, true);
+  }, [id]);
+
+  if (loading && !refreshing) {
     return (
       <View style={[styles.container, styles.center]}>
         <ActivityIndicator size="large" color="#00F5FF" />
@@ -100,7 +110,7 @@ export default function PredictionDetailScreen() {
           <Text style={styles.retryText}>重试</Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.back()}>
-          <Text style={styles.backLink}>返回进度页面</Text>
+          <Text style={styles.backLink}>返回</Text>
         </TouchableOpacity>
       </View>
     );
@@ -109,7 +119,6 @@ export default function PredictionDetailScreen() {
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
             <UiIconSymbol name="chevron.left" size={24} color="white" />
@@ -118,7 +127,17 @@ export default function PredictionDetailScreen() {
           <View style={{ width: 40 }} />
         </View>
 
-        <ScrollView contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#00F5FF"
+              colors={['#00F5FF']}
+            />
+          }
+        >
           {/* Main Card */}
           <View style={styles.card}>
             <View style={styles.liveBadge}>

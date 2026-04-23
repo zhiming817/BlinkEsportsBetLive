@@ -8,6 +8,7 @@ import {
   TouchableOpacity,
   Dimensions,
   ActivityIndicator,
+  RefreshControl,
 } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
@@ -36,19 +37,30 @@ export function HomeFeature() {
   const router = useRouter()
   const [matches, setMatches] = useState<Match[]>([])
   const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+
+  const fetchMatches = async () => {
+    try {
+      const json = await fetchApi<{ success: boolean; data: Match[] }>('/api/matches/featured');
+      console.log('Fetched data:', json);
+      if (json.success) {
+        setMatches(json.data)
+      }
+    } catch (err) {
+      console.error('Fetch error details:', err instanceof Error ? err.message : err);
+    } finally {
+      setLoading(false)
+      setRefreshing(false)
+    }
+  }
 
   useEffect(() => {
-    fetchApi<{ success: boolean; data: Match[] }>('/api/matches/featured')
-      .then(json => {
-        console.log('Fetched data:', json);
-        if (json.success) {
-          setMatches(json.data)
-        }
-      })
-      .catch(err => {
-        console.error('Fetch error details:', err.message);
-      })
-      .finally(() => setLoading(false))
+    fetchMatches()
+  }, [])
+
+  const onRefresh = React.useCallback(() => {
+    setRefreshing(true)
+    fetchMatches()
   }, [])
 
   const featuredMatch = matches.length > 0 ? matches[0] : null
@@ -70,7 +82,18 @@ export function HomeFeature() {
           </View>
         </View>
 
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor="#00F5FF"
+              colors={['#00F5FF']}
+            />
+          }
+        >
           {loading ? (
             <ActivityIndicator size="large" color="#00F5FF" style={{ marginTop: 40 }} />
           ) : featuredMatch ? (
@@ -362,4 +385,3 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
 });
-
