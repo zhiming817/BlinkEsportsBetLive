@@ -15,7 +15,7 @@ CREATE TABLE IF NOT EXISTS `users` (
   `created_at` TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '注册时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_wallet_address` (`wallet_address`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='用户表';
 
 -- ----------------------------
 -- Table structure for leagues
@@ -29,7 +29,7 @@ CREATE TABLE IF NOT EXISTS `leagues` (
   `image_url` VARCHAR(255) DEFAULT NULL COMMENT '联赛 Logo URL',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='联赛表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='联赛表';
 
 -- ----------------------------
 -- Table structure for teams
@@ -45,7 +45,7 @@ CREATE TABLE IF NOT EXISTS `teams` (
   `modified_at` DATETIME DEFAULT NULL COMMENT '外部数据更新时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_slug` (`slug`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='战队表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='战队表';
 
 -- ----------------------------
 -- Table structure for matches
@@ -69,7 +69,7 @@ CREATE TABLE IF NOT EXISTS `matches` (
   CONSTRAINT `fk_match_league` FOREIGN KEY (`league_id`) REFERENCES `leagues` (`id`),
   CONSTRAINT `fk_match_team_a` FOREIGN KEY (`team_a_id`) REFERENCES `teams` (`id`),
   CONSTRAINT `fk_match_team_b` FOREIGN KEY (`team_b_id`) REFERENCES `teams` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='赛事表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='赛事表';
 
 -- ----------------------------
 -- Table structure for match_pools
@@ -85,7 +85,7 @@ CREATE TABLE IF NOT EXISTS `match_pools` (
   UNIQUE KEY `uk_match_id` (`match_id`),
   UNIQUE KEY `uk_pda_address` (`pda_address`),
   CONSTRAINT `fk_pool_match` FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='奖池同步表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='奖池同步表';
 
 -- ----------------------------
 -- Table structure for user_bets
@@ -106,6 +106,6 @@ CREATE TABLE IF NOT EXISTS `user_bets` (
   KEY `idx_user_match` (`user_id`, `match_id`),
   CONSTRAINT `fk_bet_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
   CONSTRAINT `fk_bet_match` FOREIGN KEY (`match_id`) REFERENCES `matches` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='下注记录表';
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci COMMENT='下注记录表';
 
 SET FOREIGN_KEY_CHECKS = 1;
