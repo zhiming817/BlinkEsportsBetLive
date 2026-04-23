@@ -120,7 +120,10 @@ impl EventListener {
         let prize_claimed_disc = get_event_discriminator("PrizeClaimed");
 
         while let Ok(log) = stream.recv() {
+            println!("📥 接收到新日志 (Sig: {})", log.value.signature);
             for line in log.value.logs {
+                // 打印每一行日志以便观察
+                println!("  [LOG] {}", line);
                 if let Some(data_index) = line.find("Program data: ") {
                     let b64_data = &line[data_index + 14..];
                     if let Ok(data) = general_purpose::STANDARD.decode(b64_data) {

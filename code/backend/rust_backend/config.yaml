@@ -26,7 +26,7 @@ solana:
 # Vault 合约配置
 vault:
   # Vault 合约程序 ID
-  program_id: "6EF8rrecthR5Dkzon8Nwu78hRvfCKubJ14M5uBEwF6P"
+  program_id: "AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv"
 
 # 监听器配置
 listener:

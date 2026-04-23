@@ -3,10 +3,10 @@ mod controllers;
 mod models;
 mod services;
 mod utils;
+mod router;
 
 use std::sync::Arc;
 use config::AppConfig;
-use controllers::create_router;
 use services::database_service::DatabaseService;
 use services::match_service::MatchService;
 use services::event_listener::EventListener;
@@ -45,26 +45,27 @@ async fn main() {
 
     // 启动 Solana 事件监听器
     let listener_match_service = Arc::clone(&match_service);
+    let rpc_url = config.get_rpc_url().to_string();
+    let ws_url = config.get_wss_url().map(|s| s.to_string()).unwrap_or_else(|| {
+        rpc_url.replace("https://", "wss://").replace("http://", "ws://")
+    });
+    let program_id = config.program_id.clone();
+    
     tokio::spawn(async move {
-        // TODO: 应该从配置读取 RPC/WS URL
-        //https://api.zan.top/node/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79
-        let rpc_url = "https://api.zan.top/node/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79";
-        let ws_url = "wss://api.zan.top/node/ws/v1/solana/devnet/6e0097386cd747a8b20d9ac0fea15a79";
-        
         let listener = EventListener::new(
-            "AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv",
-            ws_url,
-            rpc_url,
+            &program_id,
+            &ws_url,
+            &rpc_url,
             listener_match_service
         );
-        println!("📡 监听合约事件: AcAyrnzU2cTMTGR6TV9ry8VHCbiPU68R3mG964agr8uv");
+        println!("📡 监听合约事件: {}", program_id);
         if let Err(e) = listener.start_listening().await {
             eprintln!("❌ 事件监听器出错: {}", e);
         }
     });
 
     // 构建路由
-    let app = create_router(db_service.clone());
+    let app = router::init_router(db_service.clone());
 
     // 启动服务器
     let addr = "0.0.0.0:3000";
