@@ -25,7 +25,7 @@ async function main() {
 
     // 请确认这是你上一步生成的 Match ID
     // 你可以手动修改这个 ID 来测试不同的比赛
-    const matchId = "1420913"; 
+    const matchId = "1420915"; 
     
     // 下注参数
     const amount = new anchor.BN(100_000_000); // 0.1 SOL (1亿 Lamports)

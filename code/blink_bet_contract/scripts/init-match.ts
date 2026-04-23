@@ -29,7 +29,7 @@ async function main() {
     // 从命令行参数获取 matchId 和 startTime
     const args = process.argv.slice(2);
     let matchId = args[0] || `match_${Math.floor(Date.now() / 1000)}`;
-    matchId = "1420913";
+    matchId = "1420915";
     const offset = parseInt(args[1] || "86400"); // 默认 1 天后
     const startTime = new anchor.BN(Math.floor(Date.now() / 1000) + offset);
 

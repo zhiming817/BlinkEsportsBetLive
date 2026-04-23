@@ -23,7 +23,7 @@ async function main() {
 
     const program = anchor.workspace.BlinkBetContract as Program<BlinkBetContract>;
 
-    const matchId = "match_1776867348"; 
+    const matchId = "1420913"; 
 
     // PDA 计算
     const [matchPda] = anchor.web3.PublicKey.findProgramAddressSync(
