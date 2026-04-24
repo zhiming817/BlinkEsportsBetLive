@@ -26,6 +26,7 @@ pub fn init_router(db_service: Arc<DatabaseService>) -> AxumRouter {
         
         // 赛事相关路由
         .route("/api/matches/featured", get(match_controller::featured_matches_handler))
+        .route("/api/matches/market", get(match_controller::market_matches_handler))
         .route("/api/matches/{id}", get(match_controller::get_match_detail_handler))
         
         // 补充中间件和状态
