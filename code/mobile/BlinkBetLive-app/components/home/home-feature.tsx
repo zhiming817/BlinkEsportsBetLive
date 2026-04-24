@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
 import { useRouter } from 'expo-router'
 import { fetchApi } from '@/utils/api'
+import { WebView } from 'react-native-webview'
 
 const { width } = Dimensions.get('window')
 
@@ -31,6 +32,8 @@ interface Match {
   start_at: string;
   status: string;
   number_of_games: number;
+  is_featured: boolean;
+  embed_url: string | null;
 }
 
 export function HomeFeature() {
@@ -71,15 +74,6 @@ export function HomeFeature() {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logoText}>BlinkBet Live</Text>
-          <View style={styles.balanceContainer}>
-            <View style={styles.solIconCircle}>
-              <UiIconSymbol name="wallet.pass.fill" size={16} color="white" />
-            </View>
-            <View>
-              <Text style={styles.balanceLabel}>BALANCE:</Text>
-              <Text style={styles.balanceValue}>145.2 SOL</Text>
-            </View>
-          </View>
         </View>
 
         <ScrollView 
@@ -96,39 +90,72 @@ export function HomeFeature() {
         >
           {loading ? (
             <ActivityIndicator size="large" color="#00F5FF" style={{ marginTop: 40 }} />
-          ) : featuredMatch ? (
-            /* Featured Upcoming Match Card */
-            <TouchableOpacity 
-              style={styles.featuredCard}
-              onPress={() => router.push({
-                pathname: '/prediction-detail',
-                params: { id: featuredMatch.id }
-              })}
-            >
-              <View style={[styles.upcomingIndicator, featuredMatch.status === 'running' && styles.liveIndicator]}>
-                <Text style={[styles.upcomingText, featuredMatch.status === 'running' && styles.liveText]}>
-                  {featuredMatch.status.toUpperCase()}
-                </Text>
-              </View>
-              <View style={styles.teamsContainer}>
-                <View style={styles.teamInfo}>
-                  <Image source={{ uri: featuredMatch.team_a.image_url }} style={styles.teamLogo} />
-                  <Text style={styles.teamName}>{featuredMatch.team_a.name}</Text>
+          ) : (
+            <>
+              {/* Live Streaming Section */}
+              {featuredMatch?.embed_url && (
+                <View style={styles.liveStreamContainer}>
+                  <View style={styles.liveStreamHeader}>
+                    <View style={styles.liveDot} />
+                    <Text style={styles.liveStreamTitle}>
+                      LIVE: {featuredMatch.team_a.acronym} VS {featuredMatch.team_b.acronym}
+                    </Text>
+                  </View>
+                  <View style={styles.webViewWrapper}>
+                    <WebView
+                      style={styles.webView}
+                      source={{ uri: featuredMatch.embed_url }}
+                      allowsFullscreenVideo={true}
+                      javaScriptEnabled={true}
+                      domStorageEnabled={true}
+                      startInLoadingState={true}
+                      renderLoading={() => (
+                        <ActivityIndicator 
+                          color="#00F5FF" 
+                          size="large" 
+                          style={StyleSheet.absoluteFill} 
+                        />
+                      )}
+                    />
+                  </View>
                 </View>
-                <Text style={styles.vsText}>VS</Text>
-                <View style={styles.teamInfo}>
-                  <Image source={{ uri: featuredMatch.team_b.image_url }} style={styles.teamLogo} />
-                  <Text style={styles.teamName}>{featuredMatch.team_b.name}</Text>
-                </View>
-              </View>
-              <View style={styles.bottomBar}>
-                <UiIconSymbol name="clock.fill" size={14} color="#8E8E93" />
-                <Text style={styles.gameTime}>
-                  {featuredMatch.start_at.split(' ')[1].substring(0, 5)} (UTC)
-                </Text>
-              </View>
-            </TouchableOpacity>
-          ) : null}
+              )}
+
+              {featuredMatch && (
+                /* Featured Upcoming Match Card */
+                <TouchableOpacity 
+                  style={styles.featuredCard}
+                  onPress={() => router.push({
+                    pathname: '/prediction-detail',
+                    params: { id: featuredMatch.id }
+                  })}
+                >
+                  <View style={[styles.upcomingIndicator, featuredMatch.status === 'running' && styles.liveIndicator]}>
+                    <Text style={[styles.upcomingText, featuredMatch.status === 'running' && styles.liveText]}>
+                      {featuredMatch.status.toUpperCase()}
+                    </Text>
+                  </View>
+                  <View style={styles.teamsContainer}>
+                    <View style={styles.teamInfo}>
+                      <Image source={{ uri: featuredMatch.team_a.image_url }} style={styles.teamLogo} />
+                      <Text style={styles.teamName}>{featuredMatch.team_a.name}</Text>
+                    </View>
+                    <Text style={styles.vsText}>VS</Text>
+                    <View style={styles.teamInfo}>
+                      <Image source={{ uri: featuredMatch.team_b.image_url }} style={styles.teamLogo} />
+                      <Text style={styles.teamName}>{featuredMatch.team_b.name}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.bottomBar}>
+                    <UiIconSymbol name="clock.fill" size={14} color="#8E8E93" />
+                    <Text style={styles.gameTime}>
+                      {featuredMatch.start_at.split(' ')[1].substring(0, 5)} (UTC)
+                    </Text>
+                  </View>
+                </TouchableOpacity>
+              )}
+            </>
+          )}
 
           {/* Market Section */}
           <View style={styles.sectionHeader}>
@@ -383,5 +410,41 @@ const styles = StyleSheet.create({
     color: '#0B0C1E',
     fontSize: 12,
     fontWeight: 'bold',
+  },
+  liveStreamContainer: {
+    marginTop: 16,
+    backgroundColor: '#1A1B2E',
+    borderRadius: 20,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.1)',
+  },
+  liveStreamHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+  },
+  liveDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#FF2D55',
+    marginRight: 8,
+  },
+  liveStreamTitle: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
+  },
+  webViewWrapper: {
+    width: '100%',
+    aspectRatio: 16 / 9,
+    backgroundColor: 'black',
+  },
+  webView: {
+    flex: 1,
+    backgroundColor: 'transparent',
   },
 });

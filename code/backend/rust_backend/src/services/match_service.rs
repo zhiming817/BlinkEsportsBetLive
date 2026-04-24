@@ -110,6 +110,7 @@ impl MatchService {
         // 3. 记录到 user_bets 表
         let bet_model = user_bet_entity::ActiveModel {
             user_id: Set(user_id),
+            wallet_address: Set(user_wallet.clone()),
             match_id: Set(match_id_numeric),
             tx_hash: Set(tx_hash),
             side: Set(side as i8),

@@ -19,6 +19,8 @@ pub struct HomeMatchItem {
     pub start_at: String,
     pub status: String,
     pub number_of_games: i32,
+    pub is_featured: bool,
+    pub embed_url: Option<String>,
 }
 
 /// 赔率信息
@@ -60,8 +62,9 @@ pub async fn featured_matches_handler(
 ) -> impl IntoResponse {
     let db = state.db_service.get_db();
 
-    // 查询所有比赛
+    // 只查询标记为推荐的比赛
     let results = match match_entity::Entity::find()
+        .filter(match_entity::Column::IsFeatured.eq(true))
         .all(db)
         .await {
             Ok(matches) => matches,
@@ -83,6 +86,8 @@ pub async fn featured_matches_handler(
                 start_at: m.start_at.to_string(),
                 status: m.status,
                 number_of_games: m.number_of_games,
+                is_featured: m.is_featured,
+                embed_url: m.embed_url,
             });
         }
     }
@@ -120,6 +125,8 @@ pub async fn get_match_detail_handler(
         start_at: m.start_at.to_string(),
         status: m.status,
         number_of_games: m.number_of_games,
+        is_featured: m.is_featured,
+        embed_url: m.embed_url.clone(),
     };
 
     // 2.5 获取奖池信息

@@ -49,6 +49,8 @@ export interface MatchDetail {
   solana_match_id: string | null;
   solana_match_pda: string | null;
   solana_tx_signature: string | null;
+  is_featured: boolean;
+  embed_url: string | null;
   match_pools: MatchPool | null;
   updated_at: string;
 }
@@ -64,6 +66,19 @@ export interface MarketMatchItem {
     home: string;
     away: string;
   };
+}
+
+export interface UserBetItem {
+  id: number;
+  match_id: number;
+  match_name: string;
+  league: string;
+  start_at: string;
+  amount: string;
+  side: number;
+  side_name: string;
+  status: string;
+  claim_status: number;
 }
 
 export interface ApiResponse<T> {
@@ -95,6 +110,14 @@ export const matchApi = {
    */
   getMarketMatches: () => {
     return fetchApi<ApiResponse<MarketMatchItem[]>>('/api/matches/market');
+  },
+
+  /**
+   * 获取用户投注记录
+   */
+  getUserBets: (walletAddress: string, status?: 'Active' | 'History') => {
+    const statusQuery = status ? `&status=${status}` : '';
+    return fetchApi<ApiResponse<UserBetItem[]>>(`/api/user/bets?wallet_address=${walletAddress}${statusQuery}`);
   }
 };
 

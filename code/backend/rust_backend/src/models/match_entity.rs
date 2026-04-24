@@ -16,6 +16,8 @@ pub struct Model {
     pub solana_match_id: Option<String>,
     pub solana_match_pda: Option<String>,
     pub solana_tx_signature: Option<String>,
+    pub is_featured: bool,
+    pub embed_url: Option<String>,
     pub updated_at: DateTimeUtc,
 }
 
