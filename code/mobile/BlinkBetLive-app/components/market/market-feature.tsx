@@ -1,15 +1,45 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, View, Text, ScrollView, TouchableOpacity, Image, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol';
-import marketsData from '@/assets/data/markets.json';
+import { matchApi, MarketMatchItem } from '@/utils/api';
+import { useRouter } from 'expo-router';
 
 export function MarketFeature() {
+  const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [markets, setMarkets] = useState<MarketMatchItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const categories = ['All',"Lol", 'CS2', 'Dota 2']; // 暂时从本地定义
+
+  const fetchMarkets = async () => {
+    try {
+      const response = await matchApi.getMarketMatches();
+      if (response.success) {
+        setMarkets(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch markets:', error);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchMarkets();
+  }, []);
+
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchMarkets();
+  };
 
   const filteredMarkets = selectedCategory === 'All' 
-    ? marketsData.markets 
-    : marketsData.markets.filter(m => m.category === selectedCategory);
+    ? markets 
+    : markets.filter(m => m.category === selectedCategory);
 
   return (
     <View style={styles.container}>
@@ -29,7 +59,7 @@ export function MarketFeature() {
             showsHorizontalScrollIndicator={false} 
             contentContainerStyle={styles.categoryScroll}
           >
-            {marketsData.categories.map((cat) => (
+            {categories.map((cat) => (
               <TouchableOpacity 
                 key={cat} 
                 style={[
@@ -50,36 +80,55 @@ export function MarketFeature() {
         </View>
 
         {/* Market List */}
-        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.listContainer}>
-          {filteredMarkets.map((market) => (
-            <View key={market.id} style={styles.marketCard}>
-              <View style={styles.cardHeader}>
-                <View style={styles.teamInfo}>
-                  <Image source={{ uri: market.image }} style={styles.teamLogo} />
-                  <View>
-                    <Text style={styles.matchName}>{market.match}</Text>
-                    <Text style={styles.leagueName}>{market.league}</Text>
+        <ScrollView 
+          showsVerticalScrollIndicator={false} 
+          contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#00F5FF" />
+          }
+        >
+          {loading ? (
+            <ActivityIndicator size="large" color="#00F5FF" style={{ marginTop: 40 }} />
+          ) : (
+            filteredMarkets.map((market) => (
+              <View key={market.id} style={styles.marketCard}>
+                <View style={styles.cardHeader}>
+                  <View style={styles.teamInfo}>
+                    {market.image ? (
+                      <Image source={{ uri: market.image }} style={styles.teamLogo} />
+                    ) : (
+                      <View style={[styles.teamLogo, { justifyContent: 'center', alignItems: 'center' }]}>
+                        <UiIconSymbol name="sportscourt" size={20} color="#8E8E93" />
+                      </View>
+                    )}
+                    <View>
+                      <Text style={styles.matchName}>{market.match_name}</Text>
+                      <Text style={styles.leagueName}>{market.league}</Text>
+                    </View>
                   </View>
+                  <Text style={styles.matchTime}>{market.time}</Text>
                 </View>
-                <Text style={styles.matchTime}>{market.time}</Text>
-              </View>
 
-              <View style={styles.oddsContainer}>
-                <TouchableOpacity style={styles.oddButton}>
-                  <Text style={styles.oddTeam}>1</Text>
-                  <Text style={styles.oddValue}>{market.odds.home}</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.oddButton}>
-                  <Text style={styles.oddTeam}>2</Text>
-                  <Text style={styles.oddValue}>{market.odds.away}</Text>
+                <View style={styles.oddsContainer}>
+                  <TouchableOpacity style={styles.oddButton}>
+                    <Text style={styles.oddTeam}>1</Text>
+                    <Text style={styles.oddValue}>{market.odds.home}</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={styles.oddButton}>
+                    <Text style={styles.oddTeam}>2</Text>
+                    <Text style={styles.oddValue}>{market.odds.away}</Text>
+                  </TouchableOpacity>
+                </View>
+
+                <TouchableOpacity 
+                  style={styles.betNowButton}
+                  onPress={() => router.push(`/prediction-detail?id=${market.id}`)}
+                >
+                  <Text style={styles.betNowText}>PLACE PREDICTION</Text>
                 </TouchableOpacity>
               </View>
-
-              <TouchableOpacity style={styles.betNowButton}>
-                <Text style={styles.betNowText}>Bet Now</Text>
-              </TouchableOpacity>
-            </View>
-          ))}
+            ))
+          )}
         </ScrollView>
       </SafeAreaView>
     </View>

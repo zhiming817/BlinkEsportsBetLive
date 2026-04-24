@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "hello-app-sol",
-    "slug": "hello-app-sol",
+    "name": "BlinkBetLive",
+    "slug": "BlinkBetLive",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.beeman.web3jsexpo"
     },
     "android": {
       "adaptiveIcon": {
@@ -17,7 +18,10 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.beeman.web3jsexpo"
+      "package": "com.beeman.web3jsexpo",
+      "compileSdkVersion": 35,
+      "targetSdkVersion": 35,
+      "buildToolsVersion": "35.0.0"
     },
     "web": {
       "bundler": "metro",
@@ -47,7 +51,9 @@
     },
     "extra": {
       "router": {},
-      "eas": {}
+      "eas": {
+        "projectId": "ebec0e53-0e7d-4e3e-b53e-d5631e3d3075"
+      }
     }
   }
 }

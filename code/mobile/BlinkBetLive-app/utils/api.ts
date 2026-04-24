@@ -53,6 +53,19 @@ export interface MatchDetail {
   updated_at: string;
 }
 
+export interface MarketMatchItem {
+  id: number;
+  match_name: string;
+  league: string;
+  image: string;
+  time: string;
+  category: string;
+  odds: {
+    home: string;
+    away: string;
+  };
+}
+
 export interface ApiResponse<T> {
   success: boolean;
   data: T;
@@ -75,5 +88,13 @@ export const matchApi = {
    */
   getMatchDetail: (matchId: string | number) => {
     return fetchApi<ApiResponse<MatchDetail>>(`/api/matches/${matchId}`);
+  },
+
+  /**
+   * 获取市场页面赛事列表
+   */
+  getMarketMatches: () => {
+    return fetchApi<ApiResponse<MarketMatchItem[]>>('/api/matches/market');
   }
 };
+
