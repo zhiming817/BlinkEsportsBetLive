@@ -62,6 +62,7 @@ export interface MarketMatchItem {
   image: string;
   away_image: string;
   time: string;
+  status: string;
   category: string;
   odds: {
     home: string;

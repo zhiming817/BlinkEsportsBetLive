@@ -41,6 +41,77 @@ export function MarketFeature() {
     ? markets 
     : markets.filter(m => m.category === selectedCategory);
 
+  const groupMarketsByDate = (markets: MarketMatchItem[]) => {
+    const groups: { [key: string]: MarketMatchItem[] } = {};
+    markets.forEach(market => {
+      try {
+        // 后端返回的可能是 "2024-04-25 15:00:00" 这种格式，
+        // 在某些 JS 引擎中直接加 " UTC" 可能解析失败
+        // 尝试将其转换为标准的 ISO 格式 (T 分隔)
+        const normalizedTime = market.time.replace(' ', 'T');
+        const date = new Date(normalizedTime.includes('Z') || normalizedTime.includes('+') ? normalizedTime : normalizedTime + 'Z');
+        
+        if (isNaN(date.getTime())) {
+          throw new Error('Invalid date');
+        }
+
+        const dateKey = date.toLocaleDateString('zh-CN', {
+          month: '2-digit',
+          day: '2-digit',
+          timeZone: 'Asia/Shanghai'
+        }).replace(/\//g, '月') + '日';
+        
+        // 判断是否是今天
+        const today = new Date();
+        const todayStr = today.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const currentStr = date.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const isToday = currentStr === todayStr;
+        const displayKey = isToday ? `${dateKey} 今天` : dateKey;
+
+        if (!groups[displayKey]) groups[displayKey] = [];
+        groups[displayKey].push(market);
+      } catch {
+        const fallback = '其他';
+        if (!groups[fallback]) groups[fallback] = [];
+        groups[fallback].push(market);
+      }
+    });
+    return groups;
+  };
+
+  const formatLocalTimeOnly = (utcDateString: string) => {
+    try {
+      const normalizedTime = utcDateString.replace(' ', 'T');
+      const date = new Date(normalizedTime.includes('Z') || normalizedTime.includes('+') ? normalizedTime : normalizedTime + 'Z');
+      if (isNaN(date.getTime())) {
+        return utcDateString;
+      }
+      return date.toLocaleTimeString('zh-CN', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: false,
+        timeZone: 'Asia/Shanghai'
+      });
+    } catch {
+      return utcDateString;
+    }
+  };
+
+  const getStatusDisplay = (status: string) => {
+    switch (status.toLowerCase()) {
+      case 'not_started':
+        return { label: '未开始', color: '#8E8E93' };
+      case 'running':
+        return { label: '进行中', color: '#00F5FF' };
+      case 'finished':
+        return { label: '已结束', color: '#4CD964' };
+      default:
+        return { label: status, color: '#8E8E93' };
+    }
+  };
+
+  const groupedMarkets = groupMarketsByDate(filteredMarkets);
+
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
@@ -53,7 +124,7 @@ export function MarketFeature() {
         </View>
 
         {/* Categories */}
-        <View>
+        <View style={styles.categoryContainer}>
           <ScrollView 
             horizontal 
             showsHorizontalScrollIndicator={false} 
@@ -90,69 +161,53 @@ export function MarketFeature() {
           {loading ? (
             <ActivityIndicator size="large" color="#00F5FF" style={{ marginTop: 40 }} />
           ) : (
-            filteredMarkets.map((market) => (
-              <TouchableOpacity 
-                key={market.id} 
-                style={styles.marketCard}
-                onPress={() => router.push(`/prediction-detail?id=${market.id}`)}
-              >
-                <View style={styles.cardHeader}>
-                  <View style={styles.leagueTag}>
-                    <Text style={styles.leagueName}>{market.league}</Text>
-                  </View>
-                  <View style={styles.timeTag}>
-                    <UiIconSymbol name="clock.fill" size={12} color="#8E8E93" />
-                    <Text style={styles.matchTime}>{market.time} (UTC)</Text>
-                  </View>
+            Object.keys(groupedMarkets).map((dateGroup) => (
+              <View key={dateGroup}>
+                <View style={styles.dateHeader}>
+                  <View style={styles.dateLine} />
+                  <Text style={styles.dateHeaderText}>{dateGroup}</Text>
+                  <View style={styles.dateLine} />
                 </View>
 
-                <View style={styles.teamsMainContainer}>
-                  <View style={styles.teamColumn}>
-                    <View style={styles.logoWrapper}>
-                      {market.image ? (
-                        <Image source={{ uri: market.image }} style={styles.teamLogoLarge} />
-                      ) : (
-                        <View style={[styles.teamLogoLarge, styles.logoPlaceholder]}>
-                          <UiIconSymbol name="sportscourt" size={24} color="#8E8E93" />
+                {groupedMarkets[dateGroup].map((market) => (
+                  <TouchableOpacity 
+                    key={market.id} 
+                    style={styles.marketCard}
+                    onPress={() => router.push(`/prediction-detail?id=${market.id}`)}
+                  >
+                    <View style={styles.matchMainRow}>
+                      <View style={styles.timeInfo}>
+                        <Text style={styles.matchTimeText} numberOfLines={1} adjustsFontSizeToFit>{formatLocalTimeOnly(market.time)}</Text>
+                        <Text style={[styles.statusBadge, { color: getStatusDisplay(market.status).color }]}>
+                          {getStatusDisplay(market.status).label}
+                        </Text>
+                        <Text style={styles.leagueNameSmall} numberOfLines={1}>{market.league}</Text>
+                      </View>
+
+                      <View style={styles.teamsContainer}>
+                        <View style={styles.teamRow}>
+                          <Image source={{ uri: market.image }} style={styles.teamLogoSmall} />
+                          <Text style={styles.teamNameText}>{market.match_name.split(' vs ')[0]}</Text>
                         </View>
-                      )}
-                    </View>
-                    <Text style={styles.teamLabel} numberOfLines={1}>{market.match_name.split(' vs ')[0]}</Text>
-                  </View>
-
-                  <Text style={styles.vsTextLarge}>VS</Text>
-
-                  <View style={styles.teamColumn}>
-                    <View style={styles.logoWrapper}>
-                      {market.away_image ? (
-                        <Image source={{ uri: market.away_image }} style={styles.teamLogoLarge} />
-                      ) : (
-                        <View style={[styles.teamLogoLarge, styles.logoPlaceholder]}>
-                          <UiIconSymbol name="sportscourt" size={24} color="#8E8E93" />
+                        <View style={styles.teamRow}>
+                          <Image source={{ uri: market.away_image }} style={styles.teamLogoSmall} />
+                          <Text style={styles.teamNameText}>{market.match_name.split(' vs ')[1]}</Text>
                         </View>
-                      )}
+                      </View>
+
+                      <View style={styles.actionColumn}>
+                        <View style={styles.oddsValuesSmall}>
+                          <Text style={styles.oddTextSmall}>{market.odds.home}</Text>
+                          <Text style={styles.oddTextSmall}>{market.odds.away}</Text>
+                        </View>
+                        <View style={styles.goDetailBtn}>
+                          <UiIconSymbol name="chevron.right" size={16} color="#00F5FF" />
+                        </View>
+                      </View>
                     </View>
-                    <Text style={styles.teamLabel} numberOfLines={1}>{market.match_name.split(' vs ')[1]}</Text>
-                  </View>
-                </View>
-
-                <View style={styles.divider} />
-
-                <View style={styles.oddsContainer}>
-                  <TouchableOpacity style={styles.oddButton}>
-                    <Text style={styles.oddIndicator}>1</Text>
-                    <Text style={styles.oddValue}>{market.odds.home}</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={styles.oddButton}>
-                    <Text style={styles.oddIndicator}>2</Text>
-                    <Text style={styles.oddValue}>{market.odds.away}</Text>
-                  </TouchableOpacity>
-                </View>
-
-                <View style={styles.betNowButton}>
-                  <Text style={styles.betNowText}>PLACE PREDICTION</Text>
-                </View>
-              </TouchableOpacity>
+                ))}
+              </View>
             ))
           )}
         </ScrollView>
@@ -180,6 +235,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     color: 'white',
+  },
+  categoryContainer: {
+    marginBottom: 8,
   },
   categoryScroll: {
     paddingHorizontal: 16,
@@ -209,123 +267,98 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingBottom: 20,
   },
-  marketCard: {
-    backgroundColor: '#1A1B2E',
-    borderRadius: 20,
-    padding: 16,
-    marginBottom: 16,
-    borderWidth: 1,
-    borderColor: '#2D2E45',
-  },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  leagueTag: {
-    backgroundColor: '#2D2E4550',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 6,
-  },
-  leagueName: {
-    fontSize: 11,
-    color: '#8E8E93',
-    fontWeight: '600',
-  },
-  timeTag: {
+  dateHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-  },
-  matchTime: {
-    fontSize: 12,
-    color: '#8E8E93',
-  },
-  teamsMainContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  teamColumn: {
-    alignItems: 'center',
-    flex: 1,
-  },
-  logoWrapper: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
-    backgroundColor: '#0B0C1E',
     justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 8,
-    borderWidth: 1,
-    borderColor: '#2D2E45',
-    overflow: 'hidden',
-  },
-  teamLogoLarge: {
-    width: 48,
-    height: 48,
-    resizeMode: 'contain',
-  },
-  logoPlaceholder: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  teamLabel: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-  vsTextLarge: {
-    color: '#444664',
-    fontSize: 20,
-    fontWeight: '900',
-    marginHorizontal: 10,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#2D2E45',
-    marginBottom: 20,
-  },
-  oddsContainer: {
-    flexDirection: 'row',
+    marginVertical: 16,
     gap: 12,
   },
-  oddButton: {
+  dateLine: {
     flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    height: 1,
     backgroundColor: '#2D2E45',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
+    opacity: 0.5,
+  },
+  dateHeaderText: {
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  marketCard: {
+    backgroundColor: '#1A1B2E',
     borderRadius: 12,
+    padding: 12,
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: '#2D2E45',
   },
-  oddIndicator: {
-    color: '#8E8E93',
-    fontWeight: 'bold',
-    fontSize: 12,
-  },
-  oddValue: {
-    color: '#00F5FF',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-  betNowButton: {
-    backgroundColor: '#00F5FF',
-    borderRadius: 12,
-    paddingVertical: 14,
+  matchMainRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 16,
   },
-  betNowText: {
-    color: '#0B0C1E',
-    fontSize: 15,
+  timeInfo: {
+    width: 75,
+    alignItems: 'flex-start',
+    marginRight: 4,
+  },
+  matchTimeText: {
+    color: 'white',
+    fontSize: 14,
     fontWeight: 'bold',
-    letterSpacing: 1,
+  },
+  statusBadge: {
+    fontSize: 10,
+    fontWeight: '600',
+    marginTop: 2,
+  },
+  leagueNameSmall: {
+    color: '#8E8E93',
+    fontSize: 10,
+    marginTop: 2,
+  },
+  teamsContainer: {
+    flex: 1,
+    gap: 12,
+    paddingLeft: 12,
+    borderLeftWidth: 1,
+    borderLeftColor: '#2D2E45',
+  },
+  teamRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  teamLogoSmall: {
+    width: 24,
+    height: 24,
+    resizeMode: 'contain',
+  },
+  teamNameText: {
+    color: 'white',
+    fontSize: 15,
+    fontWeight: '500',
+  },
+  actionColumn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  oddsValuesSmall: {
+    alignItems: 'flex-end',
+    gap: 12,
+  },
+  oddTextSmall: {
+    color: '#00F5FF',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  goDetailBtn: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#2D2E45',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
