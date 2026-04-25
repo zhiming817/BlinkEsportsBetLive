@@ -1,4 +1,4 @@
-export const API_BASE_URL = 'http://192.168.0.107:3000';
+export const API_BASE_URL = 'http://192.168.3.196:3000';
 
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -60,6 +60,7 @@ export interface MarketMatchItem {
   match_name: string;
   league: string;
   image: string;
+  away_image: string;
   time: string;
   category: string;
   odds: {

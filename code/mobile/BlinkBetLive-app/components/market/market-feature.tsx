@@ -94,13 +94,27 @@ export function MarketFeature() {
               <View key={market.id} style={styles.marketCard}>
                 <View style={styles.cardHeader}>
                   <View style={styles.teamInfo}>
-                    {market.image ? (
-                      <Image source={{ uri: market.image }} style={styles.teamLogo} />
-                    ) : (
-                      <View style={[styles.teamLogo, { justifyContent: 'center', alignItems: 'center' }]}>
-                        <UiIconSymbol name="sportscourt" size={20} color="#8E8E93" />
+                    <View style={styles.teamLogoRow}>
+                      <View style={styles.logoItem}>
+                        {market.image ? (
+                          <Image source={{ uri: market.image }} style={styles.teamLogo} />
+                        ) : (
+                          <View style={[styles.teamLogo, styles.logoPlaceholder]}>
+                            <UiIconSymbol name="sportscourt" size={20} color="#8E8E93" />
+                          </View>
+                        )}
                       </View>
-                    )}
+                      <Text style={styles.vsTextSmall}>VS</Text>
+                      <View style={styles.logoItem}>
+                        {market.away_image ? (
+                          <Image source={{ uri: market.away_image }} style={styles.teamLogo} />
+                        ) : (
+                          <View style={[styles.teamLogo, styles.logoPlaceholder]}>
+                            <UiIconSymbol name="sportscourt" size={20} color="#8E8E93" />
+                          </View>
+                        )}
+                      </View>
+                    </View>
                     <View>
                       <Text style={styles.matchName}>{market.match_name}</Text>
                       <Text style={styles.leagueName}>{market.league}</Text>
@@ -202,11 +216,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 12,
   },
-  teamLogo: {
+  teamLogoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  logoItem: {
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#2D2E45',
+    backgroundColor: '#0B0C1E',
+    overflow: 'hidden',
+  },
+  logoPlaceholder: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  vsTextSmall: {
+    color: '#00F5FF',
+    fontSize: 10,
+    fontWeight: 'bold',
+  },
+  teamLogo: {
+    width: 40,
+    height: 40,
   },
   matchName: {
     fontSize: 16,

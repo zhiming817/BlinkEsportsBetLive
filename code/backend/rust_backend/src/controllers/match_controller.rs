@@ -37,6 +37,7 @@ pub struct MarketMatchItem {
     pub match_name: String,
     pub league: String,
     pub image: String,
+    pub away_image: String,
     pub time: String,
     pub category: String,
     pub odds: MatchOdds,
@@ -229,6 +230,7 @@ pub async fn market_matches_handler(
                 match_name: format!("{} vs {}", ta.name, tb.name),
                 league: "Major League".to_string(), // 暂时硬编码
                 image: ta.image_url.clone().unwrap_or_default(), // 使用主队 Logo，处理 Option<String>
+                away_image: tb.image_url.clone().unwrap_or_default(),
                 time: m.start_at.format("%H:%M").to_string(),
                 category: "LOL".to_string(), // 暂时硬编码
                 odds: MatchOdds {
