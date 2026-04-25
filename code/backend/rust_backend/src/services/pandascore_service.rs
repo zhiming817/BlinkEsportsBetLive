@@ -37,6 +37,7 @@ struct PandascoreTeam {
 struct PandascoreStream {
     embed_url: Option<String>,
     main: bool,
+    language: String,
 }
 
 pub struct PandascoreService {
@@ -139,6 +140,85 @@ impl PandascoreService {
         }
 
         Ok(match_count)
+    }
+
+    /// 同步单个赛事结果
+    pub async fn sync_single_match(&self, match_id: u32) -> Result<()> {
+        let url = format!("{}/matches/{}", self.config.api_url, match_id);
+        println!("🔍 正在获取赛事详情: {}", url);
+
+        let response = self.client
+            .get(&url)
+            .header("Authorization", format!("Bearer {}", self.config.api_token))
+            .send()
+            .await?;
+
+        if !response.status().is_success() {
+            return Err(anyhow::anyhow!("API 响应错误: {}", response.status()));
+        }
+
+        let ps_match: PandascoreMatch = response.json().await?;
+        let db = self.db.get_db();
+
+        // 1. 确保战队存在
+        if ps_match.opponents.len() < 2 {
+            return Err(anyhow::anyhow!("赛事 ID {} 缺少对阵双方信息", match_id));
+        }
+        let opponent_a = &ps_match.opponents[0].opponent;
+        let opponent_b = &ps_match.opponents[1].opponent;
+
+        self.sync_team(opponent_a).await?;
+        self.sync_team(opponent_b).await?;
+
+        // 2. 处理状态映射
+        let status = match ps_match.status.as_str() {
+            "not_started" => "upcoming",
+            "postponed" => "upcoming",
+            "canceled" => "canceled",
+            "running" => "running",
+            "finished" => "finished",
+            _ => "upcoming",
+        };
+
+        // 3. 获取直播流
+        let embed_url = ps_match.streams_list.iter()
+            .filter_map(|s| s.embed_url.as_ref())
+            .next()
+            .cloned();
+
+        // 4. 更新或插入赛事
+        let existing_match = match_entity::Entity::find_by_id(ps_match.id)
+            .one(db)
+            .await?;
+
+        if let Some(m) = existing_match {
+            let mut active: match_entity::ActiveModel = m.into();
+            active.status = Set(status.to_string());
+            active.winner_id = Set(ps_match.winner_id);
+            active.embed_url = Set(embed_url);
+            active.updated_at = Set(Utc::now());
+            active.update(db).await?;
+            println!("✅ 已更新赛事结果: ID {}", ps_match.id);
+        } else {
+            let new_match = match_entity::ActiveModel {
+                id: Set(ps_match.id),
+                league_id: Set(ps_match.league_id),
+                team_a_id: Set(opponent_a.id),
+                team_b_id: Set(opponent_b.id),
+                number_of_games: Set(ps_match.number_of_games),
+                start_at: Set(ps_match.begin_at.unwrap_or(Utc::now())),
+                status: Set(status.to_string()),
+                winner_id: Set(ps_match.winner_id),
+                is_featured: Set(false),
+                embed_url: Set(embed_url),
+                updated_at: Set(Utc::now()),
+                ..Default::default()
+            };
+            new_match.insert(db).await?;
+            println!("✨ 已同步并新建赛事: ID {}", ps_match.id);
+        }
+
+        Ok(())
     }
 
     async fn sync_team(&self, team: &PandascoreTeam) -> Result<()> {

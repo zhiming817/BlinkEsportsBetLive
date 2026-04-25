@@ -31,6 +31,7 @@ pub fn init_router(db_service: Arc<DatabaseService>) -> AxumRouter {
         
         // 同步赛事数据 (管理接口)
         .route("/api/admin/sync-matches", get(admin_controller::sync_matches_handler))
+        .route("/api/admin/sync-match", get(admin_controller::sync_single_match_handler))
         
         // 用户相关路由
         .route("/api/user/bets", get(user_controller::get_user_bets_handler))
