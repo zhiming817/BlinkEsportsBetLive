@@ -1,6 +1,4 @@
 use axum::{
-    extract::State,
-    http::StatusCode,
     response::IntoResponse,
     Json,
 };
@@ -40,7 +38,6 @@ impl<T> ApiResponse<T> {
         }
     }
 }
-use crate::controllers::match_controller;
 
 /// 根路径处理器
 pub async fn root_handler() -> impl IntoResponse {

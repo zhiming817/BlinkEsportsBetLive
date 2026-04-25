@@ -5,7 +5,7 @@ use axum::{
 use std::sync::Arc;
 use tower_http::cors::{CorsLayer, Any};
 
-use crate::controllers::{http_controller, match_controller, user_controller};
+use crate::controllers::{http_controller, match_controller, user_controller, admin_controller};
 use crate::controllers::http_controller::AppState;
 use crate::services::database_service::DatabaseService;
 
@@ -28,6 +28,9 @@ pub fn init_router(db_service: Arc<DatabaseService>) -> AxumRouter {
         .route("/api/matches/featured", get(match_controller::featured_matches_handler))
         .route("/api/matches/market", get(match_controller::market_matches_handler))
         .route("/api/matches/{id}", get(match_controller::get_match_detail_handler))
+        
+        // 同步赛事数据 (管理接口)
+        .route("/api/admin/sync-matches", get(admin_controller::sync_matches_handler))
         
         // 用户相关路由
         .route("/api/user/bets", get(user_controller::get_user_bets_handler))

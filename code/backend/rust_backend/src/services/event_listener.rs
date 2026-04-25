@@ -5,7 +5,6 @@ use solana_sdk::pubkey::Pubkey;
 use solana_commitment_config::CommitmentConfig;
 use std::str::FromStr;
 use std::sync::Arc;
-use crate::services::DatabaseService;
 use borsh::{BorshDeserialize, BorshSerialize};
 use sha2::{Sha256, Digest};
 
@@ -63,7 +62,6 @@ pub struct PrizeClaimedData {
     pub amount: u64,
 }
 
-use crate::models::match_entity;
 use crate::services::match_service::MatchService;
 use sea_orm::*;
 

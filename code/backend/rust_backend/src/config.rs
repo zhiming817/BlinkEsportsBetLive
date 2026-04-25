@@ -101,6 +101,14 @@ struct YamlConfig {
     vault: VaultConfig,
     listener: ListenerConfig,
     database: DatabaseConfig,
+    pandascore: Option<PandascoreConfig>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct PandascoreConfig {
+    pub api_url: String,
+    pub api_token: String,
+    pub default_league_id: u32,
 }
 
 #[derive(Debug, Deserialize, Serialize)]
@@ -159,6 +167,8 @@ pub struct AppConfig {
     pub event_parse_mode: EventParseMode,
     /// 数据库配置
     pub database: DatabaseConfig,
+    /// Pandascore API 配置
+    pub pandascore: Option<PandascoreConfig>,
 }
 
 impl AppConfig {
@@ -217,6 +227,7 @@ impl Default for AppConfig {
                 max_connections: 5,
                 min_connections: 1,
             },
+            pandascore: None,
         }
     }
 }
@@ -243,6 +254,7 @@ impl AppConfig {
             listener_mode: yaml_config.listener.mode,
             event_parse_mode: yaml_config.listener.event_parse,
             database: yaml_config.database,
+            pandascore: yaml_config.pandascore,
         })
     }
 
