@@ -17,7 +17,7 @@ import { styles } from '../styles/prediction-detail.styles';
 
 // Solana & Anchor
 import * as anchor from "@coral-xyz/anchor";
-import { useMobileWallet, useAuthorization } from '@wallet-ui/react-native-web3js';
+import { useMobileWallet } from '@wallet-ui/react-native-web3js';
 import { PublicKey, SystemProgram, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { Buffer } from 'buffer';
 import { BlinkBetContract } from '@/constants/blink_bet_contract';
@@ -107,7 +107,7 @@ const IDL: any = {
 export default function PredictionDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams();
-  const { connection, authorize, account, signAndSendTransaction } = useMobileWallet();
+  const { connection, connect, account, signAndSendTransaction } = useMobileWallet();
 
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -117,6 +117,35 @@ export default function PredictionDetailScreen() {
   // 投注选择：1 为 Team A, 2 为 Team B
   const [selectedSide, setSelectedSide] = useState<1 | 2>(1);
   const [betting, setBetting] = useState(false);
+
+  const statusDisplay = useMemo(() => {
+    const normalizedStatus = (matchData?.status || '').toLowerCase();
+
+    if (['finished', 'ended', 'settled', 'completed'].includes(normalizedStatus)) {
+      return {
+        label: 'ENDED',
+        backgroundColor: 'rgba(142, 142, 147, 0.12)',
+        textColor: '#8E8E93',
+        canBet: false,
+      };
+    }
+
+    if (['running', 'live'].includes(normalizedStatus)) {
+      return {
+        label: '((•)) LIVE',
+        backgroundColor: 'rgba(255, 69, 58, 0.1)',
+        textColor: '#FF453A',
+        canBet: true,
+      };
+    }
+
+    return {
+      label: 'UPCOMING',
+      backgroundColor: 'rgba(0, 245, 255, 0.1)',
+      textColor: '#00F5FF',
+      canBet: true,
+    };
+  }, [matchData?.status]);
 
   const fetchDetail = async (isMounted: boolean, isRefresh = false) => {
     try {
@@ -128,13 +157,13 @@ export default function PredictionDetailScreen() {
         if (response.success) {
           setMatchData(response.data);
         } else {
-          setError(response.message || '加载详情失败');
+          setError(response.message || 'failed to load details');
         }
       }
     } catch (err) {
       if (isMounted) {
         console.error('[PredictionDetail] Fetch error:', err);
-        setError(err instanceof Error ? err.message : '网络请求失败');
+        setError(err instanceof Error ? err.message : 'network error');
       }
     } finally {
       if (isMounted) {
@@ -162,7 +191,7 @@ export default function PredictionDetailScreen() {
     // 1. 检查钱包连接
     if (!account) {
       try {
-        await authorize();
+        await connect();
       } catch (e) {
         Alert.alert("Error", "Please connect your wallet first");
         return;
@@ -282,9 +311,9 @@ export default function PredictionDetailScreen() {
         >
           {/* Main Card */}
           <View style={styles.card}>
-            <View style={styles.liveBadge}>
-              <Text style={styles.liveText}>
-                {matchData.status === 'upcoming' ? 'UPCOMING' : '((•)) LIVE'}
+            <View style={[styles.liveBadge, { backgroundColor: statusDisplay.backgroundColor }]}>
+              <Text style={[styles.liveText, { color: statusDisplay.textColor }]}>
+                {statusDisplay.label}
               </Text>
             </View>
 
@@ -355,19 +384,25 @@ export default function PredictionDetailScreen() {
               <Text style={styles.pdaAddress} numberOfLines={1} ellipsizeMode="middle">{matchData.solana_match_pda || 'N/A'}</Text>
             </View>
 
-            <TouchableOpacity 
-              style={[styles.betButton, betting && { opacity: 0.7 }]} 
-              onPress={handlePlaceBet}
-              disabled={betting}
-            >
-              {betting ? (
-                <ActivityIndicator color="#0B0C1E" />
-              ) : (
-                <Text style={styles.betButtonText}>
-                  {account ? `BET 0.1 SOL ON ${selectedSide === 1 ? matchData.team_a.acronym : matchData.team_b.acronym}` : 'CONNECT WALLET'}
-                </Text>
-              )}
-            </TouchableOpacity>
+            {statusDisplay.canBet ? (
+              <TouchableOpacity 
+                style={[styles.betButton, betting && { opacity: 0.7 }]} 
+                onPress={handlePlaceBet}
+                disabled={betting}
+              >
+                {betting ? (
+                  <ActivityIndicator color="#0B0C1E" />
+                ) : (
+                  <Text style={styles.betButtonText}>
+                    {account ? `BET 0.1 SOL ON ${selectedSide === 1 ? matchData.team_a.acronym : matchData.team_b.acronym}` : 'CONNECT WALLET'}
+                  </Text>
+                )}
+              </TouchableOpacity>
+            ) : (
+              <View style={[styles.betButton, { backgroundColor: '#2C2C2E' }]}>
+                <Text style={[styles.betButtonText, { color: '#8E8E93' }]}>MATCH ENDED</Text>
+              </View>
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
