@@ -20,13 +20,13 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 serde_yaml = "0.9"
 # 数据库 ORM - 使用 SeaORM
-sea-orm = { version = "1.1", features = ["sqlx-mysql", "sqlx-postgres", "sqlx-sqlite", "runtime-tokio-native-tls", "macros", "debug-print"] }
+sea-orm = { version = "1.1", features = ["sqlx-mysql", "sqlx-postgres", "sqlx-sqlite", "runtime-tokio-rustls", "macros", "debug-print"] }
 chrono = { version = "0.4", features = ["serde"] }
 # HTTP 服务器
 axum = "0.8"
 tower = "0.5"
 tower-http = { version = "0.6", features = ["cors"] }
 # HTTP 客户端
-reqwest = { version = "0.12", features = ["json"] }
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
 anchor-lang = "1.0.1"
 sha2 = "0.11.0"

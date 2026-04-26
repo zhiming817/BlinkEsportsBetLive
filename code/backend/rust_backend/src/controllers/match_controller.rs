@@ -39,6 +39,7 @@ pub struct MarketMatchItem {
     pub image: String,
     pub away_image: String,
     pub time: String,
+    pub status: String,
     pub category: String,
     pub odds: MatchOdds,
 }
@@ -231,7 +232,8 @@ pub async fn market_matches_handler(
                 league: "Major League".to_string(), // 暂时硬编码
                 image: ta.image_url.clone().unwrap_or_default(), // 使用主队 Logo，处理 Option<String>
                 away_image: tb.image_url.clone().unwrap_or_default(),
-                time: m.start_at.format("%H:%M").to_string(),
+                status: m.status.clone(),
+                time: m.start_at.to_string(), // 返回完整的 UTC 时间字符串
                 category: "LOL".to_string(), // 暂时硬编码
                 odds: MatchOdds {
                     home: home_odds,
