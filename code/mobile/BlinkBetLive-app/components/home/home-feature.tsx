@@ -6,7 +6,6 @@ import {
   Text,
   Image,
   TouchableOpacity,
-  Dimensions,
   ActivityIndicator,
   RefreshControl,
 } from 'react-native'
@@ -15,25 +14,24 @@ import { UiIconSymbol } from '@/components/ui/ui-icon-symbol'
 import { useRouter } from 'expo-router'
 import { fetchApi } from '@/utils/api'
 import { WebView } from 'react-native-webview'
-
-const { width } = Dimensions.get('window')
+import { styles } from '@/styles/home-feature.styles'
 
 interface Team {
-  id: number;
-  name: string;
-  acronym: string;
-  image_url: string;
+  id: number
+  name: string
+  acronym: string
+  image_url: string
 }
 
 interface Match {
-  id: number;
-  team_a: Team;
-  team_b: Team;
-  start_at: string;
-  status: string;
-  number_of_games: number;
-  is_featured: boolean;
-  embed_url: string | null;
+  id: number
+  team_a: Team
+  team_b: Team
+  start_at: string
+  status: string
+  number_of_games: number
+  is_featured: boolean
+  embed_url: string | null
 }
 
 export function HomeFeature() {
@@ -44,13 +42,13 @@ export function HomeFeature() {
 
   const fetchMatches = async () => {
     try {
-      const json = await fetchApi<{ success: boolean; data: Match[] }>('/api/matches/featured');
-      console.log('Fetched data:', json);
+      const json = await fetchApi<{ success: boolean; data: Match[] }>('/api/matches/featured')
+      console.log('Fetched data:', json)
       if (json.success) {
         setMatches(json.data)
       }
     } catch (err) {
-      console.error('Fetch error details:', err instanceof Error ? err.message : err);
+      console.error('Fetch error details:', err instanceof Error ? err.message : err)
     } finally {
       setLoading(false)
       setRefreshing(false)
@@ -61,23 +59,22 @@ export function HomeFeature() {
     fetchMatches()
   }, [])
 
-  const onRefresh = React.useCallback(() => {
+  const onRefresh = () => {
     setRefreshing(true)
     fetchMatches()
-  }, [])
+  }
 
   const featuredMatch = matches.length > 0 ? matches[0] : null
 
   return (
     <View style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        {/* Header */}
         <View style={styles.header}>
           <Text style={styles.logoText}>BlinkBet Live</Text>
         </View>
 
-        <ScrollView 
-          showsVerticalScrollIndicator={false} 
+        <ScrollView
+          showsVerticalScrollIndicator={false}
           contentContainerStyle={styles.scrollContent}
           refreshControl={
             <RefreshControl
@@ -92,7 +89,6 @@ export function HomeFeature() {
             <ActivityIndicator size="large" color="#00F5FF" style={{ marginTop: 40 }} />
           ) : (
             <>
-              {/* Live Streaming Section */}
               {featuredMatch?.embed_url && (
                 <View style={styles.liveStreamContainer}>
                   <View style={styles.liveStreamHeader}>
@@ -110,10 +106,10 @@ export function HomeFeature() {
                       domStorageEnabled={true}
                       startInLoadingState={true}
                       renderLoading={() => (
-                        <ActivityIndicator 
-                          color="#00F5FF" 
-                          size="large" 
-                          style={StyleSheet.absoluteFill} 
+                        <ActivityIndicator
+                          color="#00F5FF"
+                          size="large"
+                          style={StyleSheet.absoluteFill}
                         />
                       )}
                     />
@@ -122,19 +118,31 @@ export function HomeFeature() {
               )}
 
               {featuredMatch && (
-                /* Featured Upcoming Match Card */
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={styles.featuredCard}
-                  onPress={() => router.push({
-                    pathname: '/prediction-detail',
-                    params: { id: featuredMatch.id }
-                  })}
+                  onPress={() =>
+                    router.push({
+                      pathname: '/prediction-detail',
+                      params: { id: featuredMatch.id },
+                    })
+                  }
                 >
-                  <View style={[styles.upcomingIndicator, featuredMatch.status === 'running' && styles.liveIndicator]}>
-                    <Text style={[styles.upcomingText, featuredMatch.status === 'running' && styles.liveText]}>
+                  <View
+                    style={[
+                      styles.upcomingIndicator,
+                      featuredMatch.status === 'running' && styles.liveIndicator,
+                    ]}
+                  >
+                    <Text
+                      style={[
+                        styles.upcomingText,
+                        featuredMatch.status === 'running' && styles.liveText,
+                      ]}
+                    >
                       {featuredMatch.status.toUpperCase()}
                     </Text>
                   </View>
+
                   <View style={styles.teamsContainer}>
                     <View style={styles.teamInfo}>
                       <Image source={{ uri: featuredMatch.team_a.image_url }} style={styles.teamLogo} />
@@ -146,6 +154,7 @@ export function HomeFeature() {
                       <Text style={styles.teamName}>{featuredMatch.team_b.name}</Text>
                     </View>
                   </View>
+
                   <View style={styles.bottomBar}>
                     <UiIconSymbol name="clock.fill" size={14} color="#8E8E93" />
                     <Text style={styles.gameTime}>
@@ -157,7 +166,6 @@ export function HomeFeature() {
             </>
           )}
 
-          {/* Market Section */}
           <View style={styles.sectionHeader}>
             <Text style={styles.sectionTitle}>FEATURED MARKETS</Text>
             <TouchableOpacity onPress={() => router.push('/(tabs)/market')}>
@@ -167,18 +175,22 @@ export function HomeFeature() {
 
           <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.matchScroll}>
             {matches.map((item) => (
-              <TouchableOpacity 
-                key={item.id} 
+              <TouchableOpacity
+                key={item.id}
                 style={styles.matchCard}
-                onPress={() => router.push({
-                  pathname: '/prediction-detail',
-                  params: { id: item.id }
-                })}
+                onPress={() =>
+                  router.push({
+                    pathname: '/prediction-detail',
+                    params: { id: item.id },
+                  })
+                }
               >
                 <View style={styles.matchIconContainer}>
                   <UiIconSymbol name="trophy.fill" size={32} color="#00F5FF" />
                 </View>
-                <Text style={styles.matchTitle}>{item.team_a.acronym} vs {item.team_b.acronym}</Text>
+                <Text style={styles.matchTitle}>
+                  {item.team_a.acronym} vs {item.team_b.acronym}
+                </Text>
                 <Text style={styles.matchSubtitle}>BO{item.number_of_games}</Text>
                 <View style={styles.oddsRow}>
                   <View style={styles.oddItem}>
@@ -201,250 +213,3 @@ export function HomeFeature() {
     </View>
   )
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0B0C1E',
-  },
-  safeArea: {
-    flex: 1,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-  },
-  logoText: {
-    color: '#00F5FF',
-    fontSize: 24,
-    fontWeight: 'bold',
-    fontStyle: 'italic',
-  },
-  balanceContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.05)',
-    borderRadius: 30,
-    paddingRight: 16,
-    paddingLeft: 4,
-    paddingVertical: 4,
-  },
-  solIconCircle: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: '#1A1B2E',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  balanceLabel: {
-    color: '#8E8E93',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  balanceValue: {
-    color: 'white',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  scrollContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
-  featuredCard: {
-    backgroundColor: '#1A1B2E',
-    borderRadius: 20,
-    padding: 16,
-    marginVertical: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-    alignItems: 'center',
-    overflow: 'hidden',
-  },
-  upcomingIndicator: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    backgroundColor: 'rgba(0, 245, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: '#00F5FF',
-  },
-  upcomingText: {
-    color: '#00F5FF',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  teamsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-around',
-    width: '100%',
-    marginVertical: 20,
-  },
-  teamInfo: {
-    alignItems: 'center',
-  },
-  teamLogo: {
-    width: 60,
-    height: 60,
-    resizeMode: 'contain',
-    marginBottom: 8,
-  },
-  teamName: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  vsText: {
-    color: '#8E8E93',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    alignItems: 'center',
-    width: '100%',
-    paddingTop: 16,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.05)',
-  },
-  gameTime: {
-    color: '#8E8E93',
-    fontSize: 14,
-    fontWeight: '500',
-    marginLeft: 6,
-  },
-  liveIndicator: {
-    backgroundColor: 'rgba(255, 45, 85, 0.1)',
-    borderColor: '#FF2D55',
-  },
-  liveText: {
-    color: '#FF2D55',
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  sectionTitle: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-    letterSpacing: 1,
-  },
-  showAllText: {
-    color: '#00F5FF',
-    fontSize: 14,
-  },
-  matchScroll: {
-    flexDirection: 'row',
-  },
-  matchCard: {
-    width: width * 0.6,
-    backgroundColor: 'rgba(26, 27, 46, 0.8)',
-    borderRadius: 16,
-    padding: 16,
-    marginRight: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.1)',
-  },
-  matchIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    backgroundColor: 'rgba(0, 245, 255, 0.05)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(0, 245, 255, 0.2)',
-  },
-  matchTitle: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 4,
-  },
-  matchSubtitle: {
-    color: '#8E8E93',
-    fontSize: 12,
-    marginBottom: 16,
-  },
-  oddsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 16,
-  },
-  oddItem: {
-    flex: 1,
-  },
-  oddLabel: {
-    color: '#8E8E93',
-    fontSize: 10,
-    marginBottom: 2,
-  },
-  oddValue: {
-    color: '#00F5FF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  betButton: {
-    backgroundColor: '#00F5FF',
-    borderRadius: 8,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  betButtonText: {
-    color: '#0B0C1E',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  liveStreamContainer: {
-    marginTop: 16,
-    backgroundColor: '#1A1B2E',
-    borderRadius: 20,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  liveStreamHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-  },
-  liveDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#FF2D55',
-    marginRight: 8,
-  },
-  liveStreamTitle: {
-    color: 'white',
-    fontSize: 12,
-    fontWeight: 'bold',
-    letterSpacing: 0.5,
-  },
-  webViewWrapper: {
-    width: '100%',
-    aspectRatio: 16 / 9,
-    backgroundColor: 'black',
-  },
-  webView: {
-    flex: 1,
-    backgroundColor: 'transparent',
-  },
-});

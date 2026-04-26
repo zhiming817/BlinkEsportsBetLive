@@ -8,6 +8,7 @@ import {
   ActivityIndicator,
   RefreshControl,
   Alert,
+  TextInput,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { UiIconSymbol } from '@/components/ui/ui-icon-symbol';
@@ -116,7 +117,10 @@ export default function PredictionDetailScreen() {
   
   // 投注选择：1 为 Team A, 2 为 Team B
   const [selectedSide, setSelectedSide] = useState<1 | 2>(1);
+  const [betAmount, setBetAmount] = useState('0.1');
   const [betting, setBetting] = useState(false);
+
+  const presetAmounts = [0.1, 0.5, 1, 5];
 
   const statusDisplay = useMemo(() => {
     const normalizedStatus = (matchData?.status || '').toLowerCase();
@@ -203,7 +207,14 @@ export default function PredictionDetailScreen() {
     try {
       // 2. 初始化 Anchor Provider 
       const matchId = matchData.id.toString();
-      const amount = new anchor.BN(100_000_000); // 固定 0.1 SOL
+      const normalizedAmount = Number.parseFloat(betAmount);
+
+      if (!Number.isFinite(normalizedAmount) || normalizedAmount <= 0) {
+        Alert.alert('Invalid amount', 'Please enter a valid bet amount.');
+        return;
+      }
+
+      const amount = new anchor.BN(Math.round(normalizedAmount * LAMPORTS_PER_SOL));
       const side = selectedSide;
 
       // 计算 PDA
@@ -286,6 +297,8 @@ export default function PredictionDetailScreen() {
   const poolA = matchData.match_pools?.total_pool_a ? parseFloat(matchData.match_pools.total_pool_a).toFixed(2) : '0.00';
   const poolB = matchData.match_pools?.total_pool_b ? parseFloat(matchData.match_pools.total_pool_b).toFixed(2) : '0.00';
   const totalPoolVal = (parseFloat(poolA) + parseFloat(poolB)).toFixed(2);
+  const selectedTeamName = selectedSide === 1 ? matchData.team_a.name : matchData.team_b.name;
+  const selectedAmountLabel = Number.parseFloat(betAmount) > 0 ? Number.parseFloat(betAmount).toString() : '0';
 
   return (
     <View style={styles.container}>
@@ -384,6 +397,34 @@ export default function PredictionDetailScreen() {
               <Text style={styles.pdaAddress} numberOfLines={1} ellipsizeMode="middle">{matchData.solana_match_pda || 'N/A'}</Text>
             </View>
 
+            <View style={styles.amountSection}>
+              <Text style={styles.amountLabel}>Bet Amount (SOL)</Text>
+              <TextInput
+                style={styles.amountInput}
+                value={betAmount}
+                onChangeText={setBetAmount}
+                keyboardType="decimal-pad"
+                placeholder="0.1"
+                placeholderTextColor="#8E8E93"
+              />
+              <View style={styles.presetRow}>
+                {presetAmounts.map((presetAmount) => {
+                  const isSelected = betAmount === presetAmount.toString();
+                  return (
+                    <TouchableOpacity
+                      key={presetAmount}
+                      style={[styles.presetChip, isSelected && styles.presetChipActive]}
+                      onPress={() => setBetAmount(presetAmount.toString())}
+                    >
+                      <Text style={[styles.presetChipText, isSelected && styles.presetChipTextActive]}>
+                        {presetAmount} SOL
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
             {statusDisplay.canBet ? (
               <TouchableOpacity 
                 style={[styles.betButton, betting && { opacity: 0.7 }]} 
@@ -394,7 +435,7 @@ export default function PredictionDetailScreen() {
                   <ActivityIndicator color="#0B0C1E" />
                 ) : (
                   <Text style={styles.betButtonText}>
-                    {account ? `BET 0.1 SOL ON ${selectedSide === 1 ? matchData.team_a.acronym : matchData.team_b.acronym}` : 'CONNECT WALLET'}
+                    {account ? `BET ${selectedAmountLabel} SOL ON ${selectedTeamName}` : 'CONNECT WALLET'}
                   </Text>
                 )}
               </TouchableOpacity>
