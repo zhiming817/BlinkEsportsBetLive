@@ -4,8 +4,10 @@ import { AppView } from '@/components/app-view'
 import type { ViewProps } from 'react-native'
 
 export function AppPage({ children, ...props }: PropsWithChildren<ViewProps>) {
+  const { style, ...restProps } = props
+
   return (
-    <AppView style={{ flex: 1 }} {...props}>
+    <AppView {...restProps} style={[{ flex: 1 }, style]}>
       <SafeAreaView style={{ flex: 1, gap: 16, paddingHorizontal: 16 }}>{children}</SafeAreaView>
     </AppView>
   )

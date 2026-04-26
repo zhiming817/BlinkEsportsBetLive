@@ -9,7 +9,7 @@ export function AccountUiBalance({ address }: { address: PublicKey }) {
 
   return (
     <View>
-      <AppText type="title">
+      <AppText type="title" lightColor="#FFFFFF" darkColor="#FFFFFF">
         {query.isLoading ? <ActivityIndicator /> : query.data ? lamportsToSol(query.data) : '0'} SOL
       </AppText>
     </View>

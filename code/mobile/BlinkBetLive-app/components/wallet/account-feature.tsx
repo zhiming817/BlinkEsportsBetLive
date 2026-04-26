@@ -27,32 +27,47 @@ export function AccountFeature() {
   }, [invalidateBalance, invalidateTokenAccounts])
 
   return (
-    <AppPage>
-      <AppView className="flex-row justify-between items-center px-4 py-2">
-        <AppText className="text-2xl font-bold">Wallet</AppText>
+    <AppPage style={{ backgroundColor: '#0B0C1E' }}>
+      <AppView
+        style={{
+          backgroundColor: '#0B0C1E',
+          flexDirection: 'row',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          width: '100%',
+          paddingHorizontal: 16,
+          paddingVertical: 8,
+        }}
+      >
+        <AppText className="text-2xl font-bold" lightColor="#FFFFFF" darkColor="#FFFFFF">
+          Wallet
+        </AppText>
         <Pressable onPress={() => router.push('/settings')}>
-          <UiIconSymbol name="gearshape.fill" size={24} color="#000" />
+          <UiIconSymbol name="gearshape.fill" size={24} color="#FFFFFF" />
         </Pressable>
       </AppView>
       {account ? (
         <ScrollView
-          contentContainerStyle={{}}
+          style={{ flex: 1 }}
+          contentContainerStyle={{ flexGrow: 1 }}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={() => onRefresh()} />}
         >
-          <AppView style={{ alignItems: 'center', gap: 4 }}>
+          <AppView style={{ backgroundColor: '#0B0C1E', alignItems: 'center', gap: 4 }}>
             <AccountUiBalance address={account.publicKey} />
-            <AppText style={{ opacity: 0.7 }}>{ellipsify(account.publicKey.toString(), 8)}</AppText>
+            <AppText lightColor="#B8C1D9" darkColor="#B8C1D9" style={{ opacity: 0.9 }}>
+              {ellipsify(account.publicKey.toString(), 8)}
+            </AppText>
           </AppView>
-          <AppView style={{ marginTop: 16, alignItems: 'center' }}>
+          <AppView style={{ backgroundColor: '#0B0C1E', marginTop: 16, alignItems: 'center' }}>
             <AccountUiButtons />
           </AppView>
-          <AppView style={{ marginTop: 16, alignItems: 'center' }}>
+          <AppView style={{ backgroundColor: '#0B0C1E', marginTop: 16, alignItems: 'center' }}>
             <AccountUiTokenAccounts address={account.publicKey} />
           </AppView>
         </ScrollView>
       ) : (
-        <AppView style={{ flexDirection: 'column', justifyContent: 'flex-end' }}>
-          <AppText>Connect your wallet.</AppText>
+        <AppView style={{ backgroundColor: '#0B0C1E', flex: 1, flexDirection: 'column', justifyContent: 'flex-end' }}>
+          <AppText lightColor="#FFFFFF" darkColor="#FFFFFF">Connect your wallet.</AppText>
           <WalletUiButtonConnect />
         </AppView>
       )}
