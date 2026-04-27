@@ -1,4 +1,5 @@
 export const API_BASE_URL = 'http://192.168.3.196:3000';
+//export const API_BASE_URL = 'http://blinkbetlive.egtoy.xyz:3000';
 
 export async function fetchApi<T>(endpoint: string, options?: RequestInit): Promise<T> {
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
@@ -110,8 +111,18 @@ export const matchApi = {
   /**
    * 获取市场页面赛事列表
    */
-  getMarketMatches: () => {
-    return fetchApi<ApiResponse<MarketMatchItem[]>>('/api/matches/market');
+  getMarketMatches: (params?: { league_id?: number | string, status?: string }) => {
+    let query = '';
+    if (params) {
+      const searchParams = new URLSearchParams();
+      if (params.league_id) searchParams.append('league_id', params.league_id.toString());
+      if (params.status) searchParams.append('status', params.status);
+      const queryString = searchParams.toString();
+      if (queryString) {
+        query = `?${queryString}`;
+      }
+    }
+    return fetchApi<ApiResponse<MarketMatchItem[]>>(`/api/matches/market${query}`);
   },
 
   /**

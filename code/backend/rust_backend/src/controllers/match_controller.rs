@@ -1,5 +1,5 @@
 use axum::{
-    extract::{State, Path},
+    extract::{State, Path, Query},
     http::StatusCode,
     response::IntoResponse,
     Json,
@@ -21,6 +21,13 @@ pub struct HomeMatchItem {
     pub number_of_games: i32,
     pub is_featured: bool,
     pub embed_url: Option<String>,
+}
+
+/// 市场页面查询参数
+#[derive(Deserialize)]
+pub struct MarketMatchQueryParams {
+    pub league_id: Option<u32>,
+    pub status: Option<String>,
 }
 
 /// 赔率信息
@@ -184,13 +191,23 @@ pub async fn get_match_detail_handler(
 /// 市场页面赛事列表处理器
 pub async fn market_matches_handler(
     State(state): State<AppState>,
+    Query(params): Query<MarketMatchQueryParams>,
 ) -> impl IntoResponse {
     let db = state.db_service.get_db();
 
-    // 查询所有比赛
-    let results = match match_entity::Entity::find()
-        .all(db)
-        .await {
+    // 构建带过滤条件的查询
+    let mut query = match_entity::Entity::find();
+    
+    if let Some(league_id) = params.league_id {
+        query = query.filter(match_entity::Column::LeagueId.eq(league_id));
+    }
+    
+    if let Some(status) = params.status {
+        query = query.filter(match_entity::Column::Status.eq(status));
+    }
+
+    // 查询比赛
+    let results = match query.all(db).await {
             Ok(matches) => matches,
             Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<Vec<MarketMatchItem>>::error(e.to_string()))),
         };

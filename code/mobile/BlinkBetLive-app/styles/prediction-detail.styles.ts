@@ -193,6 +193,51 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: Platform.select({ ios: 'Courier', android: 'monospace' }),
   },
+  amountSection: {
+    marginBottom: 24,
+  },
+  amountLabel: {
+    color: '#8E8E93',
+    fontSize: 12,
+    marginBottom: 10,
+  },
+  amountInput: {
+    backgroundColor: '#2C2C2E',
+    color: '#fff',
+    borderRadius: 16,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 18,
+    fontWeight: '700',
+    marginBottom: 12,
+    borderWidth: 1,
+    borderColor: 'rgba(0, 245, 255, 0.12)',
+  },
+  presetRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  presetChip: {
+    backgroundColor: '#2C2C2E',
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  presetChipActive: {
+    backgroundColor: 'rgba(0, 245, 255, 0.1)',
+    borderColor: '#00F5FF',
+  },
+  presetChipText: {
+    color: '#8E8E93',
+    fontSize: 13,
+    fontWeight: '600',
+  },
+  presetChipTextActive: {
+    color: '#00F5FF',
+  },
   betButton: {
     backgroundColor: '#00F5FF',
     paddingVertical: 18,

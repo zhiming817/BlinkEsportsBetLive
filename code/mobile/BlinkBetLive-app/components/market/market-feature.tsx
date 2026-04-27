@@ -8,15 +8,34 @@ import { useRouter } from 'expo-router';
 export function MarketFeature() {
   const router = useRouter();
   const [selectedCategory, setSelectedCategory] = useState('All');
+  const [selectedLeague, setSelectedLeague] = useState<number | 'All'>('All');
+  const [selectedStatus, setSelectedStatus] = useState<string | 'All'>('All');
   const [markets, setMarkets] = useState<MarketMatchItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
-  const categories = ['All',"Lol", 'CS2', 'Dota 2']; // 暂时从本地定义
+  const categories = ['All',"Lol" ]; // 暂时从本地定义 'CS2', 'Dota 2'
+  const leagues = [
+    { id: 'All', name: 'All Leagues' },
+    { id: 297, name: 'LPL' },
+    { id: 293, name: 'LCK' },
+    { id: 4198, name: 'LEC' },
+    { id: 4197, name: 'LCS' }
+  ];
+  const statuses = [
+    { id: 'All', name: 'All Status' },
+    { id: 'upcoming', name: 'Upcoming' },
+    { id: 'running', name: 'Running' },
+    { id: 'finished', name: 'Finished' }
+  ];
 
   const fetchMarkets = async () => {
     try {
-      const response = await matchApi.getMarketMatches();
+      const params: any = {};
+      if (selectedLeague !== 'All') params.league_id = selectedLeague;
+      if (selectedStatus !== 'All') params.status = selectedStatus;
+      
+      const response = await matchApi.getMarketMatches(params);
       if (response.success) {
         setMarkets(response.data);
       }
@@ -30,7 +49,7 @@ export function MarketFeature() {
 
   useEffect(() => {
     fetchMarkets();
-  }, []);
+  }, [selectedLeague, selectedStatus]);
 
   const onRefresh = () => {
     setRefreshing(true);
@@ -55,23 +74,23 @@ export function MarketFeature() {
           throw new Error('Invalid date');
         }
 
-        const dateKey = date.toLocaleDateString('zh-CN', {
-          month: '2-digit',
+        const dateKey = date.toLocaleDateString('en-US', {
+          month: 'short',
           day: '2-digit',
           timeZone: 'Asia/Shanghai'
-        }).replace(/\//g, '月') + '日';
+        });
         
         // 判断是否是今天
         const today = new Date();
-        const todayStr = today.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
-        const currentStr = date.toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+        const todayStr = today.toLocaleDateString('en-US', { timeZone: 'Asia/Shanghai' });
+        const currentStr = date.toLocaleDateString('en-US', { timeZone: 'Asia/Shanghai' });
         const isToday = currentStr === todayStr;
-        const displayKey = isToday ? `${dateKey} 今天` : dateKey;
+        const displayKey = isToday ? `${dateKey} Today` : dateKey;
 
         if (!groups[displayKey]) groups[displayKey] = [];
         groups[displayKey].push(market);
       } catch {
-        const fallback = '其他';
+        const fallback = 'Other';
         if (!groups[fallback]) groups[fallback] = [];
         groups[fallback].push(market);
       }
@@ -86,7 +105,7 @@ export function MarketFeature() {
       if (isNaN(date.getTime())) {
         return utcDateString;
       }
-      return date.toLocaleTimeString('zh-CN', {
+      return date.toLocaleTimeString('en-US', {
         hour: '2-digit',
         minute: '2-digit',
         hour12: false,
@@ -100,13 +119,14 @@ export function MarketFeature() {
   const getStatusDisplay = (status: string) => {
     switch (status.toLowerCase()) {
       case 'not_started':
-        return { label: '未开始', color: '#8E8E93' };
+      case 'upcoming':
+        return { label: 'Upcoming', color: '#8E8E93' };
       case 'running':
-        return { label: '进行中', color: '#00F5FF' };
+        return { label: 'Live', color: '#00F5FF' };
       case 'finished':
-        return { label: '已结束', color: '#4CD964' };
+        return { label: 'Finished', color: '#4CD964' };
       default:
-        return { label: status, color: '#8E8E93' };
+        return { label: status.toUpperCase(), color: '#8E8E93' };
     }
   };
 
@@ -144,6 +164,54 @@ export function MarketFeature() {
                   selectedCategory === cat && styles.categoryTextActive
                 ]}>
                   {cat}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.filterScroll}
+          >
+            {leagues.map((league) => (
+              <TouchableOpacity 
+                key={league.id} 
+                style={[
+                  styles.filterBtn, 
+                  selectedLeague === league.id && styles.filterBtnActive
+                ]}
+                onPress={() => setSelectedLeague(league.id as any)}
+              >
+                <Text style={[
+                  styles.filterText,
+                  selectedLeague === league.id && styles.filterTextActive
+                ]}>
+                  {league.name}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          <ScrollView 
+            horizontal 
+            showsHorizontalScrollIndicator={false} 
+            contentContainerStyle={styles.filterScroll}
+          >
+            {statuses.map((s) => (
+              <TouchableOpacity 
+                key={s.id} 
+                style={[
+                  styles.filterBtn, 
+                  selectedStatus === s.id && styles.filterBtnActive
+                ]}
+                onPress={() => setSelectedStatus(s.id)}
+              >
+                <Text style={[
+                  styles.filterText,
+                  selectedStatus === s.id && styles.filterTextActive
+                ]}>
+                  {s.name}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -261,6 +329,31 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   categoryTextActive: {
+    color: '#00F5FF',
+  },
+  filterScroll: {
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    gap: 8,
+  },
+  filterBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
+    backgroundColor: '#1A1B2E',
+    borderWidth: 1,
+    borderColor: '#2D2E45',
+  },
+  filterBtnActive: {
+    backgroundColor: '#00F5FF10',
+    borderColor: '#00F5FF80',
+  },
+  filterText: {
+    color: '#8E8E93',
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  filterTextActive: {
     color: '#00F5FF',
   },
   listContainer: {
