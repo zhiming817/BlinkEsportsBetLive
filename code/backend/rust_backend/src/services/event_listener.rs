@@ -99,14 +99,24 @@ impl EventListener {
         Ok(match_pool)
     }
 
-    pub async fn start_listening(&self) -> anyhow::Result<()> {
-        let (mut _subscription_receiver, stream) = PubsubClient::logs_subscribe(
+pub async fn start_listening(&self) -> anyhow::Result<()> {
+        println!("🚀 [DEBUG] 开始订阅日志... WS: {}, Program: {}", self.ws_url, self.program_id);
+        
+        let (mut _subscription_receiver, mut stream) = match PubsubClient::logs_subscribe(
             &self.ws_url,
             RpcTransactionLogsFilter::Mentions(vec![self.program_id.to_string()]),
             RpcTransactionLogsConfig {
-                commitment: Some(CommitmentConfig::confirmed()),
+                commitment: Some(CommitmentConfig::processed()),
             },
-        )?;
+        ) {
+            Ok(res) => res,
+            Err(e) => {
+                eprintln!("❌ [CRITICAL] 订阅失败: {:?}", e);
+                return Err(anyhow::anyhow!("订阅失败: {}", e));
+            }
+        };
+
+        println!("✅ [DEBUG] 订阅成功，等待事件中...");
 
         // 预计算 Discriminators
         let match_init_disc = get_event_discriminator("MatchInitialized");
@@ -114,98 +124,76 @@ impl EventListener {
         let match_settled_disc = get_event_discriminator("MatchSettled");
         let prize_claimed_disc = get_event_discriminator("PrizeClaimed");
 
-        while let Ok(log) = stream.recv() {
-            println!("📥 接收到新日志 (Sig: {})", log.value.signature);
-            for line in log.value.logs {
-                println!("  [LOG] {}", line);
-                if let Some(data_index) = line.find("Program data: ") {
-                    let b64_data = &line[data_index + 14..];
-                    if let Ok(data) = general_purpose::STANDARD.decode(b64_data) {
-                        if data.len() < 8 { continue; }
-                        let disc = &data[..8];
-                        let content = &data[8..];
+        loop {
+            match stream.recv() {
+                Ok(log) => {
+                    println!("📥 接收到新日志 (Sig: {})", log.value.signature);
+                    for line in log.value.logs {
+                        if let Some(data_index) = line.find("Program data: ") {
+                            let b64_data = &line[data_index + 14..];
+                            if let Ok(data) = general_purpose::STANDARD.decode(b64_data) {
+                                if data.len() < 8 { continue; }
+                                let disc = &data[..8];
+                                let content = &data[8..];
 
-                        if disc == match_init_disc {
-                            if let Ok(event) = MatchInitializedData::try_from_slice(&content) {
-                                let signature = log.value.signature.clone();
-                                let match_id = event.match_id.clone();
-                                let match_pda = event.pool_pda.to_string();
-                                
-                                println!("🔥 比赛初始化事件: MatchID={}, StartTime={}, Sig={}", match_id, event.start_time, signature);
-                                
-                                if let Err(e) = self.match_service.update_solana_info(
-                                    &match_id,
-                                    match_id.clone(),
-                                    match_pda.clone(),
-                                    signature
-                                ).await {
-                                    eprintln!("❌ 同步比赛到数据库失败: {}", e);
-                                } else {
-                                    println!("✅ 比赛数据库记录已更新 (via MatchService)");
-                                    if let Ok(pool_on_chain) = self.fetch_match_pool(&match_pda).await {
-                                        println!("🧪 [测试] 链上校验成功! MatchID: {}, TotalA: {}", 
-                                            pool_on_chain.match_id, pool_on_chain.total_pool_a);
+                                if disc == match_init_disc {
+                                    if let Ok(event) = MatchInitializedData::try_from_slice(&content) {
+                                        let signature = log.value.signature.clone();
+                                        let match_id = event.match_id.clone();
+                                        let match_pda = event.pool_pda.to_string();
+                                        
+                                        println!("🔥 比赛初始化事件: MatchID={}, StartTime={}, Sig={}", match_id, event.start_time, signature);
+                                        
+                                        if let Err(e) = self.match_service.update_solana_info(
+                                            &match_id,
+                                            match_id.clone(),
+                                            match_pda.clone(),
+                                            signature
+                                        ).await {
+                                            eprintln!("❌ 同步比赛到数据库失败: {}", e);
+                                        } else {
+                                            println!("✅ 比赛数据库记录已更新 (via MatchService)");
+                                        }
+                                    }
+                                } else if disc == bet_placed_disc {
+                                    if let Ok(event) = BetPlacedData::try_from_slice(&content) {
+                                        let signature = log.value.signature.clone();
+                                        println!("💰 下注事件: MatchID={}, User={}, Side={}, Amount={}, Sig={}", 
+                                            event.match_id, event.user, event.side, event.amount, signature);
+                                        
+                                        if let Err(e) = self.match_service.handle_bet_placed(
+                                            &event.match_id,
+                                            event.user.to_string(),
+                                            event.side,
+                                            event.amount,
+                                            signature
+                                        ).await {
+                                            eprintln!("❌ 更新下注记录失败: {}", e);
+                                        }
+                                    }
+                                } else if disc == match_settled_disc {
+                                    if let Ok(event) = MatchSettledData::try_from_slice(&content) {
+                                        println!("结算事件: MatchID={}, WinnerSide={}", event.match_id, event.winner_side);
+                                        if let Err(e) = self.match_service.settle_match(
+                                            &event.match_id,
+                                            event.winner_side
+                                        ).await {
+                                            eprintln!("❌ 结算比赛失败: {}", e);
+                                        }
+                                    }
+                                } else if disc == prize_claimed_disc {
+                                    if let Ok(event) = PrizeClaimedData::try_from_slice(&content) {
+                                        println!("🏆 领奖事件: MatchID={}, User={}, Amount={}", event.match_id, event.user, event.amount);
                                     }
                                 }
                             }
-                        } else if disc == bet_placed_disc {
-                            if let Ok(event) = BetPlacedData::try_from_slice(&content) {
-                                let signature = log.value.signature.clone();
-                                println!("💰 下注事件: MatchID={}, User={}, Side={}, Amount={}, Sig={}", 
-                                    event.match_id, event.user, event.side, event.amount, signature);
-                                
-                                if let Err(e) = self.match_service.handle_bet_placed(
-                                    &event.match_id,
-                                    event.user.to_string(),
-                                    event.side,
-                                    event.amount,
-                                    signature
-                                ).await {
-                                    eprintln!("❌ 更新下注记录失败: {}", e);
-                                }
-
-                                // --- 修复调试用查询代码 ---
-                                let db = self.match_service.get_db();
-                                let numeric_id = if event.match_id.contains("match_") {
-                                    event.match_id.replace("match_", "").parse::<u32>().unwrap_or(0)
-                                } else {
-                                    event.match_id.parse::<u32>().unwrap_or(0)
-                                };
-                                println!("🔍 [调试] 正在查询奖池记录, MatchId: {}", numeric_id);
-                                
-                                match crate::models::match_pool_entity::Entity::find()
-                                    .filter(crate::models::match_pool_entity::Column::MatchId.eq(numeric_id))
-                                    .one(db).await {
-                                    Ok(Some(pool_record)) => {
-                                        println!("🔍 [调试] 找到数据库记录! PDA: {}, 开始请求 RPC...", pool_record.pda_address);
-                                        match self.fetch_match_pool(&pool_record.pda_address).await {
-                                            Ok(pool_on_chain) => {
-                                                println!("🧪 [下注测试] 链上奖池校验成功: TotalA={}, TotalB={}", 
-                                                    pool_on_chain.total_pool_a, pool_on_chain.total_pool_b);
-                                            },
-                                            Err(e) => eprintln!("❌ [调试] RPC 请求失败: {}", e),
-                                        }
-                                    },
-                                    Ok(None) => println!("⚠️ [调试] 数据库中未找到 MatchId 为 {} 的奖池记录", numeric_id),
-                                    Err(e) => eprintln!("❌ [调试] 数据库查询出错: {}", e),
-                                }
-                            }
-                        } else if disc == match_settled_disc {
-                            if let Ok(event) = MatchSettledData::try_from_slice(&content) {
-                                println!("结算事件: MatchID={}, WinnerSide={}", event.match_id, event.winner_side);
-                                if let Err(e) = self.match_service.settle_match(
-                                    &event.match_id,
-                                    event.winner_side
-                                ).await {
-                                    eprintln!("❌ 结算比赛失败: {}", e);
-                                }
-                            }
-                        } else if disc == prize_claimed_disc {
-                            if let Ok(event) = PrizeClaimedData::try_from_slice(&content) {
-                                println!("🏆 领奖事件: MatchID={}, User={}, Amount={}", event.match_id, event.user, event.amount);
-                            }
                         }
                     }
+                }
+                Err(e) => {
+                    eprintln!("⚠️ [DEBUG] Stream 断开或超时: {:?}. 正在尝试重新连接...", e);
+                    // 实际生产环境这里应该加入重连逻辑，目前先打印错误
+                    break;
                 }
             }
         }
