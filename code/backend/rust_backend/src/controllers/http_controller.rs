@@ -11,6 +11,7 @@ use crate::services::database_service::DatabaseService;
 #[derive(Clone)]
 pub struct AppState {
     pub db_service: Arc<DatabaseService>,
+    pub config: crate::config::AppConfig,
 }
 
 /// API 响应结构

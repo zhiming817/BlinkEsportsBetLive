@@ -152,6 +152,7 @@ pub struct DatabaseConfig {
 }
 
 /// 应用配置
+#[derive(Debug, Clone)]
 pub struct AppConfig {
     /// 当前激活的网络
     pub active_network: Network,

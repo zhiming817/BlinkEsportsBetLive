@@ -142,6 +142,39 @@ impl PandascoreService {
         Ok(match_count)
     }
 
+    pub async fn get_match_winner(&self, match_id: u32) -> Result<Option<u8>> {
+        let url = format!("{}/matches/{}", self.config.api_url, match_id);
+        
+        let response = self.client.get(&url)
+            .header("accept", "application/json")
+            .header("Authorization", format!("Bearer {}", self.config.api_token))
+            .send()
+            .await
+            .context("无法向 Pandascore API 发送查询详情请求")?;
+
+        if !response.status().is_success() {
+            return Ok(None);
+        }
+
+        let ps_match: PandascoreMatch = response.json().await?;
+        
+        if ps_match.status != "finished" {
+            return Ok(None);
+        }
+
+        if let Some(winner_id) = ps_match.winner_id {
+            if ps_match.opponents.len() >= 2 {
+                if ps_match.opponents[0].opponent.id == winner_id {
+                    return Ok(Some(1)); // Team A 胜
+                } else if ps_match.opponents[1].opponent.id == winner_id {
+                    return Ok(Some(2)); // Team B 胜
+                }
+            }
+        }
+
+        Ok(None)
+    }
+
     /// 同步单个赛事结果
     pub async fn sync_single_match(&self, match_id: u32) -> Result<()> {
         let url = format!("{}/matches/{}", self.config.api_url, match_id);

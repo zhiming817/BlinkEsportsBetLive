@@ -104,6 +104,47 @@ pub async fn featured_matches_handler(
     (StatusCode::OK, Json(ApiResponse::success(home_matches)))
 }
 
+/// 专门供给 Switchboard 预言机刷新的接口
+#[derive(Serialize)]
+pub struct OracleMatchResult {
+    pub match_id: String,
+    pub winner_side: u8, // 0: 未结束, 1: A 胜, 2: B 胜
+}
+
+pub async fn oracle_settle_info_handler(
+    State(state): State<AppState>,
+    Path(match_id): Path<u32>,
+) -> impl IntoResponse {
+    let pandascore_config = match state.config.pandascore.clone() {
+        Some(config) => config,
+        None => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<OracleMatchResult>::error("Pandascore config not found".to_string()))).into_response(),
+    };
+
+    let ps_service = crate::services::PandascoreService::new(
+        state.db_service.clone(),
+        pandascore_config,
+    );
+
+    match ps_service.get_match_winner(match_id).await {
+        Ok(Some(winner_side)) => {
+            (StatusCode::OK, Json(ApiResponse::success(OracleMatchResult {
+                match_id: match_id.to_string(),
+                winner_side,
+            }))).into_response()
+        }
+        Ok(None) => {
+            (StatusCode::OK, Json(ApiResponse::success(OracleMatchResult {
+                match_id: match_id.to_string(),
+                winner_side: 0,
+            }))).into_response()
+        }
+        Err(e) => {
+            (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::<OracleMatchResult>::error(e.to_string()))).into_response()
+        }
+    }
+}
+
+
 /// 获取赛事详情
 pub async fn get_match_detail_handler(
     State(state): State<AppState>,
@@ -162,14 +203,14 @@ pub async fn get_match_detail_handler(
                 })
             } else {
                 Some(MatchOdds {
-                    home: "1.95".to_string(),
-                    away: "1.95".to_string(),
+                    home: "2.00".to_string(),
+                    away: "2.00".to_string(),
                 })
             }
         },
         None => Some(MatchOdds {
-            home: "1.95".to_string(),
-            away: "1.95".to_string(),
+            home: "2.00".to_string(),
+            away: "2.00".to_string(),
         }),
     };
 
@@ -237,10 +278,10 @@ pub async fn market_matches_handler(
                         let a = (total / total_b) * sea_orm::prelude::Decimal::from_f64_retain(0.95).unwrap();
                         (format!("{:.2}", h), format!("{:.2}", a))
                     } else {
-                        ("1.95".to_string(), "1.95".to_string())
+                        ("2.00".to_string(), "2.00".to_string())
                     }
                 },
-                _ => ("1.95".to_string(), "1.95".to_string()),
+                _ => ("2.00".to_string(), "2.00".to_string()),
             };
 
             market_matches.push(MarketMatchItem {

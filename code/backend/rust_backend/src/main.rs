@@ -65,7 +65,7 @@ async fn main() {
     });
 
     // 构建路由
-    let app = router::init_router(db_service.clone());
+    let app = router::init_router(db_service.clone(), config.clone());
 
     // 启动服务器
     let addr = "0.0.0.0:3000";
