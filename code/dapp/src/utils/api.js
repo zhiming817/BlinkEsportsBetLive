@@ -3,8 +3,7 @@
  */
 
 // 与 mobile 端保持一致的后端地址，或者根据环境判断
-export const API_BASE_URL = 'http://192.168.0.107:3000';
-// export const API_BASE_URL = 'http://blinkbetlive.egtoy.xyz:3000';
+export const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
 /**
  * 基础 Fetch 封装

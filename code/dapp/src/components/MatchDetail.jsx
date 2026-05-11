@@ -93,15 +93,20 @@ const MatchDetail = () => {
         PROGRAM_ID
       );
 
-      const provider = new anchor.AnchorProvider(connection, {
-        publicKey: publicKey,
-        signTransaction: async (tx) => tx,
-        signAllTransactions: async (txs) => txs,
-      }, { commitment: 'processed' });
+      // 使用 @solana/wallet-adapter-react 提供的接口，这是最稳定且不会引起 Simulation failed 的方式
+      const provider = new anchor.AnchorProvider(
+        connection, 
+        publicKey, // 直接传入 publicKey 对象作为钱包上下文
+        { commitment: 'confirmed' }
+      );
       const program = new anchor.Program(IDL, provider);
 
       console.log('Initializing match with ID:', matchIdStr);
-      const tx = await program.methods
+      
+      // 获取最新的 Blockhash，防止 "already been processed" 报错
+      const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash();
+
+      const transaction = await program.methods
         .initializeMatch(matchIdStr, startTime)
         .accounts({
           matchPool: matchPoolPda,
@@ -109,16 +114,28 @@ const MatchDetail = () => {
           admin: publicKey,
           systemProgram: SystemProgram.programId,
         })
-        .rpc();
+        .transaction();
 
-      console.log('Transaction signature:', tx);
+      transaction.recentBlockhash = blockhash;
+      transaction.feePayer = publicKey;
+
+      // 使用 wallet-adapter 的 sendTransaction 发送，这是 DApp 的最佳实践
+      const signature = await sendTransaction(transaction, connection);
+      
+      console.log('Transaction sent, waiting for confirmation...', signature);
+      await connection.confirmTransaction({
+        signature,
+        blockhash,
+        lastValidBlockHeight
+      }, 'confirmed');
+
       alert('Match initialized on-chain successfully!');
       await checkContractMatch(matchIdStr);
     } catch (err) {
       console.error('Initialization failed detailed:', err);
       let errorMsg = err.message;
-      if (err.message.includes('Failed to fetch')) {
-        errorMsg = "RPC connection failed. Please check your internet or try another RPC node.";
+      if (err.logs) {
+        console.log('Transaction Logs:', err.logs);
       }
       alert(`Initialization failed: ${errorMsg}`);
     } finally {
@@ -151,7 +168,7 @@ const MatchDetail = () => {
       const matchIdStr = matchData.id.toString();
       const amountBN = new anchor.BN(Math.round(amountNum * LAMPORTS_PER_SOL));
       
-      // 计算 PDA
+      // 计算 PDA (完全匹配 test-bet.ts 逻辑)
       const [matchPoolPda] = PublicKey.findProgramAddressSync(
         [anchor.utils.bytes.utf8.encode("match"), anchor.utils.bytes.utf8.encode(matchIdStr)],
         PROGRAM_ID
@@ -166,20 +183,17 @@ const MatchDetail = () => {
         PROGRAM_ID
       );
 
-      // 构造 Mock Wallet 对接 Anchor
-      const mockWallet = {
+      // 参考 test-bet.ts 的 Provider 配置
+      const provider = new anchor.AnchorProvider(connection, {
         publicKey: publicKey,
-        signTransaction: async (tx) => tx,
-        signAllTransactions: async (txs) => txs,
-      };
-
-      const provider = new anchor.AnchorProvider(connection, mockWallet, {
-        commitment: 'confirmed',
-      });
+        signTransaction: (tx) => window.solana.signTransaction(tx),
+        signAllTransactions: (txs) => window.solana.signAllTransactions(txs),
+      }, { commitment: 'confirmed' });
       const program = new anchor.Program(IDL, provider);
 
-      // 构建指令
-      const instruction = await program.methods
+      console.log(`Placing bet: Match=${matchIdStr}, Amount=${amountNum} SOL, Selection=${selectedSide}`);
+      
+      const tx = await program.methods
         .placeBet(matchIdStr, amountBN, selectedSide)
         .accounts({
           matchPool: matchPoolPda,
@@ -187,18 +201,15 @@ const MatchDetail = () => {
           user: publicKey,
           systemProgram: SystemProgram.programId,
         })
-        .instruction();
+        .rpc();
 
-      const transaction = new Transaction().add(instruction);
-      const latestBlockhash = await connection.getLatestBlockhash();
-      transaction.recentBlockhash = latestBlockhash.blockhash;
-      transaction.feePayer = publicKey;
-
-      const signature = await sendTransaction(transaction, connection);
-      await connection.confirmTransaction(signature, 'confirmed');
-
-      alert(`Bet placed successfully! Signature: ${signature.slice(0, 8)}...`);
-      fetchDetail(); // 刷新数据
+      console.log('Bet transaction success:', tx);
+      alert(`Bet placed successfully!`);
+      
+      // 延迟刷新以确保链上数据已传播
+      setTimeout(() => {
+        fetchDetail();
+      }, 2000);
     } catch (err) {
       console.error('Bet failed:', err);
       alert(`Bet failed: ${err.message}`);
